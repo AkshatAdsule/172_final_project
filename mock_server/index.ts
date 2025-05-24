@@ -5,7 +5,7 @@ const wss = new WebSocketServer({port: 8080})
 
 wss.on("connection", (ws) => {
   let lat = 38.5417957
-  let lon = -121.7756125
+  let lng = -121.7756125
   const speed = 0.0001
 
   setInterval(() => {
@@ -14,11 +14,11 @@ wss.on("connection", (ws) => {
     const dlon = speed * Math.cos(angle)
     
     lat += dlat;
-    lon += dlon;
+    lng += dlon;
 
     ws.send(JSON.stringify({
       lat,
-      lon
+      lng
     }))
   }, 1000);
 })

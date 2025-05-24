@@ -10,7 +10,7 @@ function RouteComponent() {
 		<>
 			<div className="empty-state">
 				<span>
-					View <Link to="/rides">live location </Link>
+					View <Link to="/rides/live">live location </Link>
 					or select a ride from your history.
 				</span>
 			</div>
