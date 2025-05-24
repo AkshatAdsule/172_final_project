@@ -1,7 +1,7 @@
 import { Map, useMap } from "@vis.gl/react-google-maps";
 import { useEffect } from "react";
-import { Polyline } from "../routes/rides/components/-polyline"; // Adjusted path
-import type { LatLng } from "../types"; // Assuming LatLng type is defined in src/types
+import { Polyline } from "../routes/rides/components/-polyline";
+import type { LatLng } from "../types";
 
 interface MapComponentProps {
 	latLngList: LatLng[];
@@ -58,6 +58,12 @@ export function MapComponent({
 		<Map
 			defaultCenter={defaultCenter}
 			defaultZoom={defaultZoom}
+			cameraControl={false}
+			disableDefaultUI={true}
+			zoomControl={false}
+			gestureHandling={"none"}
+			disableDoubleClickZoom={true}
+			scrollwheel={false}
 			style={{ width: "100%", height: "100%" }}
 		>
 			<Polyline path={latLngList} />
