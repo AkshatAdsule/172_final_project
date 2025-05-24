@@ -1,7 +1,8 @@
 import { Map, useMap } from "@vis.gl/react-google-maps";
 import { useEffect } from "react";
-import { Polyline } from "../routes/rides/components/-polyline";
-import type { LatLng } from "../types";
+import { Polyline } from "./polyline";
+import type { LatLng } from "../../types";
+import { DARK_STYLE } from "./dark-stype";
 
 interface MapComponentProps {
 	latLngList: LatLng[];
@@ -56,6 +57,7 @@ export function MapComponent({
 
 	return (
 		<Map
+			styles={DARK_STYLE}
 			defaultCenter={defaultCenter}
 			defaultZoom={defaultZoom}
 			cameraControl={false}
@@ -66,7 +68,7 @@ export function MapComponent({
 			scrollwheel={false}
 			style={{ width: "100%", height: "100%" }}
 		>
-			<Polyline path={latLngList} />
+			<Polyline path={latLngList} strokeColor={"#ffffffde"} />
 		</Map>
 	);
 }
