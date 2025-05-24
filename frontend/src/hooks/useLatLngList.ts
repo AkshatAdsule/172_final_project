@@ -10,8 +10,8 @@ export function useLatLngList(url: string) {
 		if (lastMessage) {
 			try {
 				const data = JSON.parse(lastMessage) as LatLng;
-				// Basic validation to ensure lat and lon are numbers
-				if (typeof data.lat === "number" && typeof data.lon === "number") {
+				// Basic validation to ensure lat and lng are numbers
+				if (typeof data.lat === "number" && typeof data.lng === "number") {
 					setLatLngList((prevList) => [...prevList, data]);
 				} else {
 					console.warn("[useLatLngList] Received invalid data format:", data);

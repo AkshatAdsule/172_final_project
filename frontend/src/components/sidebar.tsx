@@ -15,7 +15,7 @@ export default function Sidebar() {
 			</div>
 			<hr />
 			<div className="rides">
-				<Link to="/rides">
+				<Link to="/rides/live">
 					<div>Live Track</div>
 				</Link>
 				<hr />
