@@ -11,7 +11,9 @@ export default function Sidebar() {
 	return (
 		<nav className={styles.nav}>
 			<div className={styles.brand}>
-				<h1>B3</h1>
+				<h1>
+					B<sup>3</sup>
+				</h1>
 			</div>
 			<hr />
 			<div className={styles.rides}>
