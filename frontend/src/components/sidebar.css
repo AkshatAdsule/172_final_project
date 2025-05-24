@@ -1,0 +1,8 @@
+nav {
+	padding: 8px;
+	background-color: #494949;
+	flex: 2;
+	/* round top and bottom right corners */
+	border-top-right-radius: 30px;
+	border-bottom-right-radius: 30px;
+}
