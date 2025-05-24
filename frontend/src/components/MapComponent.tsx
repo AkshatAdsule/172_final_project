@@ -32,12 +32,34 @@ export function MapComponent({
 			latLngList.forEach((latLng) => {
 				bounds.extend(new google.maps.LatLng(latLng.lat, latLng.lng));
 			});
-			map.fitBounds(bounds);
+
+			// Adjust bounds to account for the floating sidebar
+			map.fitBounds(bounds, {
+				left: 340, // Sidebar width + margin
+				top: 40,
+				right: 40,
+				bottom: 40,
+			});
+		} else {
+			// Center the map considering the sidebar offset
+			const center = new google.maps.LatLng(
+				defaultCenter.lat,
+				defaultCenter.lng,
+			);
+			map.setCenter(center);
+			map.setZoom(defaultZoom);
+
+			// Pan slightly right to center in visible area
+			map.panBy(-170, 0); // Half of sidebar width
 		}
-	}, [map, latLngList]);
+	}, [map, latLngList, defaultCenter, defaultZoom]);
 
 	return (
-		<Map defaultCenter={defaultCenter} defaultZoom={defaultZoom}>
+		<Map
+			defaultCenter={defaultCenter}
+			defaultZoom={defaultZoom}
+			style={{ width: "100%", height: "100%" }}
+		>
 			<Polyline path={latLngList} />
 		</Map>
 	);

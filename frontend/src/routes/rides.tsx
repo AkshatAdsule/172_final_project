@@ -11,7 +11,6 @@ export const Route = createFileRoute("/rides")({
 function RouteComponent() {
 	return (
 		<div className="container">
-			<Sidebar />
 			<main>
 				<APIProvider apiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY}>
 					<LatLngProvider url="ws://localhost:8080/">
@@ -19,6 +18,7 @@ function RouteComponent() {
 					</LatLngProvider>
 				</APIProvider>
 			</main>
+			<Sidebar />
 		</div>
 	);
 }

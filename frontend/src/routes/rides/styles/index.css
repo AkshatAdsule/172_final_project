@@ -4,4 +4,7 @@
 	align-items: center;
 	justify-content: center;
 	height: 100%;
+	/* Center content in the space not occupied by the sidebar */
+	margin-left: 340px; /* Sidebar width (300px) + margin (40px) */
+	padding-right: 40px; /* Balance the margin for proper centering */
 }
