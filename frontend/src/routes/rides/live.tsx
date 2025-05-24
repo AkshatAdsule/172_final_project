@@ -11,8 +11,8 @@ function RouteComponent() {
 	const { latLngList } = useLatLng();
 
 	return (
-		<>
+		<div className="live-route">
 			<MapComponent latLngList={latLngList} />
-		</>
+		</div>
 	);
 }
