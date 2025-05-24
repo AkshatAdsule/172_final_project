@@ -1,7 +1,7 @@
 import type React from "react";
 import type { ReactNode } from "react";
-import { useWebSocket } from "../hooks/websocket";
 import { WSContext } from "../contexts/ws-context";
+import { useWebSocket } from "../hooks/websocket";
 
 interface WSProviderProps {
 	url: string;
