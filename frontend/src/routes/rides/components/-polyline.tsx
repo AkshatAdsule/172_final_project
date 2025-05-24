@@ -12,9 +12,6 @@ import { GoogleMapsContext, useMapsLibrary } from "@vis.gl/react-google-maps";
 import type { Ref } from "react";
 
 type PolylineCustomProps = {
-	/**
-	 * this is an encoded string for the path, will be decoded and used as a path
-	 */
 	path: { lat: number; lng: number }[];
 };
 
@@ -39,9 +36,6 @@ function usePolyline(props: PolylineProps) {
 
 	// update the path with the encodedPath
 	useMemo(() => {
-		// if (!encodedPath || !geometryLibrary) return;
-		// const path = geometryLibrary.encoding.decodePath(encodedPath);
-		// polyline.setPath(path);
 		polyline.setPath(
 			path.map((point) => new google.maps.LatLng(point.lat, point.lng)),
 		);
