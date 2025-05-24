@@ -5,7 +5,7 @@
 	overflow: hidden;
 }
 
-main {
+.main {
 	position: absolute;
 	top: 0;
 	left: 0;
@@ -15,7 +15,7 @@ main {
 }
 
 /* Floating sidebar positioning */
-.container > nav {
+.sidebar {
 	position: absolute;
 	top: 20px;
 	left: 20px;
@@ -26,4 +26,5 @@ main {
 	background-color: rgba(73, 73, 73, 0.85);
 	border-radius: 20px;
 	box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+	padding: 20px;
 }

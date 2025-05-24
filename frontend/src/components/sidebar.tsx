@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import "./sidebar.css";
+import styles from "./sidebar.module.css";
 
 export default function Sidebar() {
 	const mockRideHistory = [
@@ -9,21 +9,21 @@ export default function Sidebar() {
 	];
 
 	return (
-		<nav>
-			<div className="brand">
+		<nav className={styles.nav}>
+			<div className={styles.brand}>
 				<h1>B3</h1>
 			</div>
 			<hr />
-			<div className="rides">
+			<div className={styles.rides}>
 				<Link to="/rides/live">
 					<div>Live Track</div>
 				</Link>
 				<hr />
 				{mockRideHistory.map((ride) => (
 					<Link key={ride.id} to={`/rides`}>
-						<div className="ride">
-							<span className="name">{ride.name}</span>
-							<span className="date">
+						<div className={styles.ride}>
+							<span className={styles.name}>{ride.name}</span>
+							<span className={styles.date}>
 								{new Date(ride.date).toLocaleDateString()}
 							</span>
 						</div>
