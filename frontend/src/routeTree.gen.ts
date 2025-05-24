@@ -11,10 +11,17 @@
 // Import Routes
 
 import { Route as rootRoute } from './routes/__root'
+import { Route as RidesImport } from './routes/rides'
 import { Route as IndexImport } from './routes/index'
 import { Route as RidesIndexImport } from './routes/rides/index'
 
 // Create/Update Routes
+
+const RidesRoute = RidesImport.update({
+  id: '/rides',
+  path: '/rides',
+  getParentRoute: () => rootRoute,
+} as any)
 
 const IndexRoute = IndexImport.update({
   id: '/',
@@ -23,9 +30,9 @@ const IndexRoute = IndexImport.update({
 } as any)
 
 const RidesIndexRoute = RidesIndexImport.update({
-  id: '/rides/',
-  path: '/rides/',
-  getParentRoute: () => rootRoute,
+  id: '/',
+  path: '/',
+  getParentRoute: () => RidesRoute,
 } as any)
 
 // Populate the FileRoutesByPath interface
@@ -39,21 +46,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexImport
       parentRoute: typeof rootRoute
     }
-    '/rides/': {
-      id: '/rides/'
+    '/rides': {
+      id: '/rides'
       path: '/rides'
       fullPath: '/rides'
-      preLoaderRoute: typeof RidesIndexImport
+      preLoaderRoute: typeof RidesImport
       parentRoute: typeof rootRoute
+    }
+    '/rides/': {
+      id: '/rides/'
+      path: '/'
+      fullPath: '/rides/'
+      preLoaderRoute: typeof RidesIndexImport
+      parentRoute: typeof RidesImport
     }
   }
 }
 
 // Create and export the route tree
 
+interface RidesRouteChildren {
+  RidesIndexRoute: typeof RidesIndexRoute
+}
+
+const RidesRouteChildren: RidesRouteChildren = {
+  RidesIndexRoute: RidesIndexRoute,
+}
+
+const RidesRouteWithChildren = RidesRoute._addFileChildren(RidesRouteChildren)
+
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/rides': typeof RidesIndexRoute
+  '/rides': typeof RidesRouteWithChildren
+  '/rides/': typeof RidesIndexRoute
 }
 
 export interface FileRoutesByTo {
@@ -64,26 +89,27 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRoute
   '/': typeof IndexRoute
+  '/rides': typeof RidesRouteWithChildren
   '/rides/': typeof RidesIndexRoute
 }
 
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/rides'
+  fullPaths: '/' | '/rides' | '/rides/'
   fileRoutesByTo: FileRoutesByTo
   to: '/' | '/rides'
-  id: '__root__' | '/' | '/rides/'
+  id: '__root__' | '/' | '/rides' | '/rides/'
   fileRoutesById: FileRoutesById
 }
 
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  RidesIndexRoute: typeof RidesIndexRoute
+  RidesRoute: typeof RidesRouteWithChildren
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  RidesIndexRoute: RidesIndexRoute,
+  RidesRoute: RidesRouteWithChildren,
 }
 
 export const routeTree = rootRoute
@@ -97,14 +123,21 @@ export const routeTree = rootRoute
       "filePath": "__root.tsx",
       "children": [
         "/",
-        "/rides/"
+        "/rides"
       ]
     },
     "/": {
       "filePath": "index.tsx"
     },
+    "/rides": {
+      "filePath": "rides.tsx",
+      "children": [
+        "/rides/"
+      ]
+    },
     "/rides/": {
-      "filePath": "rides/index.tsx"
+      "filePath": "rides/index.tsx",
+      "parent": "/rides"
     }
   }
 }
