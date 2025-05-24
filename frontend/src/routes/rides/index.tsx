@@ -1,5 +1,5 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import "./styles/index.css";
+import { Link, createFileRoute } from "@tanstack/react-router";
+import styles from "./styles/index.module.css";
 
 export const Route = createFileRoute("/rides/")({
 	component: RouteComponent,
@@ -8,7 +8,7 @@ export const Route = createFileRoute("/rides/")({
 function RouteComponent() {
 	return (
 		<>
-			<div className="empty-state">
+			<div className={styles.emptyState}>
 				<span>
 					View <Link to="/rides/live">live location </Link>
 					or select a ride from your history.
