@@ -1,14 +1,12 @@
-import { useState } from "react";
-import reactLogo from "./assets/react.svg";
-import viteLogo from "/vite.svg";
 import "./App.css";
-
+import { useWS } from "./hooks/useWS";
 function App() {
-	const [count, setCount] = useState(0);
-
+	const { lastMessage, readyState } = useWS();
 	return (
 		<>
-			<h1>Hello World</h1>
+			<h1>WebSocket Example</h1>
+			<p>Last message: {lastMessage || "No messages yet"}</p>
+			<p>Ready state: {readyState}</p>
 		</>
 	);
 }
