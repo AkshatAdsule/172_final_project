@@ -1,0 +1,12 @@
+.container {
+	height: calc(100vh - 20px);
+	width: calc(100vw - 20px);
+	display: flex;
+	flex-direction: row;
+	padding: 10px 0;
+}
+
+main {
+	flex: 8;
+	height: 100%;
+}
