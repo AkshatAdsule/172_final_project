@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Map, useMap } from "@vis.gl/react-google-maps";
 import { useLatLng } from "../../hooks/useLatLng";
 import { useEffect } from "react";
-import { Polyline } from "./_components/-polyline";
+import { Polyline } from "./components/-polyline";
 import "./styles/live.css";
 
 export const Route = createFileRoute("/rides/live")({
