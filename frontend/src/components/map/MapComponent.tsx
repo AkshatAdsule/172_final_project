@@ -2,7 +2,7 @@ import { Map, useMap } from "@vis.gl/react-google-maps";
 import { useEffect } from "react";
 import { Polyline } from "./polyline";
 import type { LatLng } from "../../types";
-import { DARK_STYLE } from "./dark-stype";
+import { DARK_STYLE } from "./dark-style";
 
 interface MapComponentProps {
 	latLngList: LatLng[];
