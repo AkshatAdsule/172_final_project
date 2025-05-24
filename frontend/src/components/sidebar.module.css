@@ -1,15 +1,13 @@
-.nav {
-	/* Basic nav styles - positioning is handled by parent */
-}
-
 .brand {
 	margin-bottom: 1rem;
+	width: 100%;
+	text-align: center;
 }
 
 .brand h1 {
 	margin: 0;
 	color: white;
-	font-size: 1.5rem;
+	font-size: 3rem;
 }
 
 .rides {
@@ -22,10 +20,6 @@
 	text-decoration: none;
 	color: white;
 	transition: all 0.2s ease;
-}
-
-.rides a:hover {
-	color: #646cff;
 }
 
 .rides a > div {
@@ -41,7 +35,10 @@
 .ride {
 	display: flex;
 	flex-direction: column;
-	gap: 0.25rem;
+}
+
+.ride > *:not(:first-child) {
+	margin-top: 0.25rem;
 }
 
 .name {
