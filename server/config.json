@@ -1,0 +1,15 @@
+{
+    "mqtt_broker_url": "tls://a1edew9tp1yb1x-ats.iot.us-east-1.amazonaws.com:8883",
+    "mqtt_client_id": "server-ride-tracker",
+    "mqtt_topic": "$aws/things/akshat_cc3200board/shadow/update/accepted",
+    "mqtt_cert_path": "certs/certificate.pem.crt",
+    "mqtt_key_path": "certs/private.pem.key",
+    "mqtt_root_ca_path": "certs/AmazonRootCA1.pem",
+    "database_path": "data/rides.db",
+    "server_address": ":8080",
+    "ride_start_distance_meters": 8.0,
+    "ride_end_inactivity_seconds": 120,
+    "ride_end_static_seconds": 120,
+    "ride_end_static_dist_meters": 8.0,
+    "timezone": "America/Los_Angeles"
+}
