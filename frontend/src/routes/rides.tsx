@@ -13,7 +13,7 @@ function RouteComponent() {
 		<div className={styles.container}>
 			<main className={styles.main}>
 				<APIProvider apiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY}>
-					<LatLngProvider url="ws://localhost:8080/">
+					<LatLngProvider url="ws://localhost:8080/ws">
 						<Outlet />
 					</LatLngProvider>
 				</APIProvider>
