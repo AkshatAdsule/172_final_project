@@ -1,54 +1,121 @@
-# React + TypeScript + Vite
+# B³ Ride Tracking Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A React-based frontend application for tracking and visualizing GPS rides. This application connects to a backend service that processes MQTT GPS updates and provides real-time ride tracking with historical data.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **Live GPS Tracking**: Real-time location updates via WebSocket connection
+- **Ride Management**: Automatic ride detection, start/end tracking
+- **Historical Rides**: Browse and view detailed information about past rides
+- **Interactive Maps**: Google Maps integration for route visualization
+- **Responsive Design**: Modern UI with sidebar navigation
 
-## Expanding the ESLint configuration
+## Architecture
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+### Key Components
 
-```js
-export default tseslint.config({
-  extends: [
-    // Remove ...tseslint.configs.recommended and replace with this
-    ...tseslint.configs.recommendedTypeChecked,
-    // Alternatively, use this for stricter rules
-    ...tseslint.configs.strictTypeChecked,
-    // Optionally, add this for stylistic rules
-    ...tseslint.configs.stylisticTypeChecked,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
+- **Real-time WebSocket Communication**: Receives live GPS updates and ride status changes
+- **REST API Integration**: Fetches historical ride data from the backend
+- **Interactive Maps**: Displays GPS tracks using Google Maps
+- **Type-safe Development**: Full TypeScript support with proper type definitions
+
+### WebSocket Message Types
+
+The frontend handles these WebSocket message types from the backend:
+
+- `current_location`: Live GPS position updates
+- `ride_started`: Notification when a new ride begins
+- `ride_position_added`: New GPS point added to current ride
+- `ride_ended`: Notification when a ride concludes
+
+### API Endpoints
+
+- `GET /api/rides`: Fetch ride summaries with pagination and date filtering
+- `GET /api/rides/{id}`: Get detailed ride information including GPS track
+
+## Setup
+
+### Prerequisites
+
+- Node.js 18+ or Bun
+- Google Maps API key
+- Backend service running (see planning.md for backend setup)
+
+### Environment Variables
+
+Create a `.env` file with:
+
+```env
+VITE_GOOGLE_MAPS_API_KEY=your_google_maps_api_key_here
+VITE_API_BASE_URL=http://localhost:8080/api
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+### Installation
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+```bash
+# Install dependencies
+npm install
+# or
+bun install
 
-export default tseslint.config({
-  plugins: {
-    // Add the react-x and react-dom plugins
-    'react-x': reactX,
-    'react-dom': reactDom,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended typescript rules
-    ...reactX.configs['recommended-typescript'].rules,
-    ...reactDom.configs.recommended.rules,
-  },
-})
+# Start development server
+npm run dev
+# or
+bun dev
 ```
+
+### Build for Production
+
+```bash
+npm run build
+# or
+bun run build
+```
+
+## Project Structure
+
+```
+src/
+├── components/          # Reusable UI components
+│   ├── map/            # Map-related components
+│   └── sidebar.tsx     # Navigation sidebar
+├── hooks/              # Custom React hooks
+│   ├── useLatLngList.ts # WebSocket data management
+│   ├── useRides.ts     # API data fetching
+│   └── websocket.ts    # WebSocket connection
+├── routes/             # Page components (TanStack Router)
+│   ├── rides/          # Ride-related pages
+│   └── index.tsx       # Home page
+├── services/           # External service integrations
+│   └── api.ts          # REST API client
+├── types/              # TypeScript type definitions
+└── providers/          # React context providers
+```
+
+## Technology Stack
+
+- **React 19** with TypeScript
+- **TanStack Router** for routing
+- **Google Maps API** for map visualization
+- **WebSocket** for real-time communication
+- **Vite** for build tooling
+- **CSS Modules** for styling
+
+## Development
+
+The application uses TanStack Router for file-based routing. Routes are automatically generated based on the file structure in `src/routes/`.
+
+### Key Routes
+
+- `/` - Home page
+- `/rides` - Ride history overview
+- `/rides/live` - Live GPS tracking
+- `/rides/{id}` - Individual ride details
+
+### WebSocket Integration
+
+The `useLatLngList` hook manages WebSocket connections and handles different message types from the backend, maintaining both live tracking data and ride state information.
+
+### API Integration
+
+The `ApiService` class provides methods for fetching ride data from the backend REST API, with proper error handling and TypeScript support.
