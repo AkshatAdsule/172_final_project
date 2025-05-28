@@ -1,12 +1,20 @@
 import { Link } from "@tanstack/react-router";
+import { useRides } from "../hooks/useRides";
 import styles from "./sidebar.module.css";
 
 export default function Sidebar() {
-	const mockRideHistory = [
-		{ id: 1, name: "Morning Ride", date: "2023-10-01" },
-		{ id: 2, name: "Evening Ride", date: "2023-10-02" },
-		{ id: 3, name: "Weekend Ride", date: "2023-10-03" },
-	];
+	const { rides, loading, error } = useRides();
+
+	const formatDate = (dateString: string) => {
+		return new Date(dateString).toLocaleDateString();
+	};
+
+	const formatTime = (dateString: string) => {
+		return new Date(dateString).toLocaleTimeString([], {
+			hour: '2-digit',
+			minute: '2-digit'
+		});
+	};
 
 	return (
 		<nav className={styles.nav}>
@@ -21,12 +29,24 @@ export default function Sidebar() {
 					<div>Live Track</div>
 				</Link>
 				<hr />
-				{mockRideHistory.map((ride) => (
-					<Link key={ride.id} to={`/rides`}>
+
+				{loading && <div className={styles.loading}>Loading rides...</div>}
+				{error && <div className={styles.error}>Error: {error}</div>}
+
+				{!loading && !error && rides.length === 0 && (
+					<div className={styles.empty}>No rides found</div>
+				)}
+
+				{!loading && !error && rides.map((ride) => (
+					<Link key={ride.id} to={"/rides/$rideId"} params={{ rideId: ride.id.toString() }}>
 						<div className={styles.ride}>
 							<span className={styles.name}>{ride.name}</span>
 							<span className={styles.date}>
-								{new Date(ride.date).toLocaleDateString()}
+								{formatDate(ride.start_time)}
+							</span>
+							<span className={styles.time}>
+								{formatTime(ride.start_time)}
+								{ride.end_time && ` - ${formatTime(ride.end_time)}`}
 							</span>
 						</div>
 					</Link>

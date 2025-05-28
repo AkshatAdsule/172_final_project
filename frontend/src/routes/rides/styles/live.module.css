@@ -1,11 +1,54 @@
 /* Full viewport map container */
 .liveRoute {
-	width: 100%;
+	position: relative;
 	height: 100%;
+	width: 100%;
 }
 
 /* Ensure the map takes full dimensions */
-.liveRoute > div {
+.liveRoute>div {
 	width: 100% !important;
 	height: 100% !important;
+}
+
+.currentInfo,
+.rideInfo {
+	position: absolute;
+	background: rgba(0, 0, 0, 0.8);
+	color: white;
+	padding: 16px;
+	border-radius: 8px;
+	backdrop-filter: blur(10px);
+	z-index: 1000;
+	min-width: 200px;
+}
+
+.currentInfo {
+	top: 20px;
+	right: 20px;
+}
+
+.rideInfo {
+	bottom: 20px;
+	right: 20px;
+}
+
+.currentInfo h3,
+.rideInfo h3 {
+	margin: 0 0 12px 0;
+	font-size: 1rem;
+	font-weight: 600;
+}
+
+.currentInfo div,
+.rideInfo div {
+	font-size: 0.9rem;
+	margin-bottom: 4px;
+	font-family: monospace;
+}
+
+.ongoing {
+	color: #ff4444;
+	font-weight: bold;
+	font-family: system-ui, -apple-system, sans-serif !important;
 }

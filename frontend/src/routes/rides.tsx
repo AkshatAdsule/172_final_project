@@ -9,11 +9,13 @@ export const Route = createFileRoute("/rides")({
 });
 
 function RouteComponent() {
+	const wsUrl = import.meta.env.VITE_WS_URL || "ws://localhost:8080/ws";
+
 	return (
 		<div className={styles.container}>
 			<main className={styles.main}>
 				<APIProvider apiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY}>
-					<LatLngProvider url="ws://localhost:8080/ws">
+					<LatLngProvider url={wsUrl}>
 						<Outlet />
 					</LatLngProvider>
 				</APIProvider>

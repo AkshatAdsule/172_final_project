@@ -1,3 +1,12 @@
+.nav {
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+	color: white;
+	width: 300px;
+	overflow-y: auto;
+}
+
 .brand {
 	margin-bottom: 1rem;
 	width: 100%;
@@ -6,48 +15,92 @@
 
 .brand h1 {
 	margin: 0;
-	color: white;
-	font-size: 3rem;
+	font-size: 2rem;
+	font-weight: 700;
+	text-align: center;
+}
+
+.brand sup {
+	font-size: 1rem;
+	vertical-align: super;
+}
+
+hr {
+	border: none;
+	height: 1px;
+	background-color: #333;
+	margin: 20px 0;
+	border-radius: 15px;
 }
 
 .rides {
 	display: flex;
 	flex-direction: column;
-	gap: 0.5rem;
+	gap: 8px;
 }
 
 .rides a {
 	text-decoration: none;
-	color: white;
-	transition: all 0.2s ease;
+	color: inherit;
 }
 
-.rides a > div {
-	padding: 0.75rem;
-	border-radius: 8px;
-	transition: background-color 0.2s ease;
+.rides a:hover {
+	background-color: #2a2a2a;
+	border-radius: 4px;
 }
 
-.rides a:hover > div {
-	background-color: rgba(255, 255, 255, 0.1);
+.rides a:first-child {
+	font-weight: 600;
+	padding: 12px;
+	background-color: #2a2a2a;
+	border-radius: 4px;
+	text-align: center;
 }
 
 .ride {
+	padding: 12px;
+	border-radius: 4px;
+	transition: background-color 0.2s;
 	display: flex;
 	flex-direction: column;
-}
-
-.ride > *:not(:first-child) {
-	margin-top: 0.25rem;
+	gap: 4px;
 }
 
 .name {
 	font-weight: 500;
+	font-size: 0.95rem;
 }
 
 .date {
-	font-size: 0.875rem;
+	font-size: 0.85rem;
 	opacity: 0.7;
+}
+
+.time {
+	font-size: 0.8rem;
+	opacity: 0.6;
+	font-family: monospace;
+}
+
+.loading,
+.error,
+.empty {
+	padding: 12px;
+	text-align: center;
+	font-size: 0.9rem;
+	opacity: 0.7;
+}
+
+.error {
+	color: #ff6b6b;
+}
+
+.loading {
+	color: #888;
+}
+
+.empty {
+	color: #666;
 }
 
 /* Separator styling */

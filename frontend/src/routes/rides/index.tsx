@@ -14,6 +14,6 @@ function RouteComponent() {
 					or select a ride from your history.
 				</span>
 			</div>
-		</>
+		</ >
 	);
 }
