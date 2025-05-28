@@ -29,19 +29,20 @@ func ProcessGPSUpdate(
 ) (newState RideState, rideEventOccurred bool, eventType string) {
 
 	if lastPosition == nil { // First point ever, or after a long pause
-		log.Println("ProcessGPSUpdate: No last position, starting fresh. Assuming IDLE.")
+		log.Println("ProcessGPSUpdate: No last position, storing first point and remaining IDLE.")
 		return StateIdle, false, ""
 	}
 
 	distance := util.HaversineDistance(lastPosition.Latitude, lastPosition.Longitude, currentPosition.Latitude, currentPosition.Longitude)
-	// Unused variable 'now' was here
+	log.Printf("ProcessGPSUpdate: Distance from last position: %.2fm", distance)
 
 	switch currentState {
 	case StateIdle:
 		if distance >= cfg.RideStartDistance {
-			log.Printf("ProcessGPSUpdate: IDLE -> TRACKING. Distance: %.2fm", distance)
+			log.Printf("ProcessGPSUpdate: IDLE -> TRACKING. Distance: %.2fm (>= threshold %.2fm)", distance, cfg.RideStartDistance)
 			return StateTracking, true, "ride_started"
 		}
+		log.Printf("ProcessGPSUpdate: IDLE -> IDLE. Distance: %.2fm (< threshold %.2fm)", distance, cfg.RideStartDistance)
 		return StateIdle, false, ""
 
 	case StateTracking:
