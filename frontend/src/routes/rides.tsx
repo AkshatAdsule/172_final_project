@@ -10,19 +10,20 @@ export const Route = createFileRoute("/rides")({
 
 function RouteComponent() {
 	const wsUrl = import.meta.env.VITE_WS_URL || "ws://localhost:8080/ws";
+	const gmapsApiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 
 	return (
 		<div className={styles.container}>
+			<div className={styles.sidebar}>
+				<Sidebar />
+			</div>
 			<main className={styles.main}>
-				<APIProvider apiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY}>
+				<APIProvider apiKey={gmapsApiKey}>
 					<LatLngProvider url={wsUrl}>
 						<Outlet />
 					</LatLngProvider>
 				</APIProvider>
 			</main>
-			<div className={styles.sidebar}>
-				<Sidebar />
-			</div>
 		</div>
 	);
 }
