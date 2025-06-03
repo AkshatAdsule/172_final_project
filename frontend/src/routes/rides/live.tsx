@@ -21,13 +21,18 @@ function RouteComponent() {
 					{currentLocation.speed_knots && (
 						<div>Speed: {currentLocation.speed_knots.toFixed(1)} knots</div>
 					)}
-					<div>Time: {new Date(currentLocation.timestamp).toLocaleTimeString()}</div>
+					<div>
+						Time: {new Date(currentLocation.timestamp).toLocaleTimeString()}
+					</div>
 				</div>
 			)}
 			{rideState.currentRide && (
 				<div className={styles.rideInfo}>
 					<h3>{rideState.currentRide.name}</h3>
-					<div>Started: {new Date(rideState.currentRide.start_time).toLocaleTimeString()}</div>
+					<div>
+						Started:{" "}
+						{new Date(rideState.currentRide.start_time).toLocaleTimeString()}
+					</div>
 					<div>Points: {rideState.ridePositions.length}</div>
 					{!rideState.currentRide.end_time && (
 						<div className={styles.ongoing}>🔴 Live</div>

@@ -7,7 +7,7 @@ import type {
 	RideStartedMessage,
 	RidePositionAddedMessage,
 	RideEndedMessage,
-	RideSummary
+	RideSummary,
 } from "../types";
 import { useWebSocket } from "./websocket";
 
@@ -22,7 +22,7 @@ export function useLatLngList(url: string) {
 	const [currentLocation, setCurrentLocation] = useState<Position | null>(null);
 	const [rideState, setRideState] = useState<RideState>({
 		currentRide: null,
-		ridePositions: []
+		ridePositions: [],
 	});
 
 	useEffect(() => {
@@ -31,13 +31,13 @@ export function useLatLngList(url: string) {
 				const message = JSON.parse(lastMessage) as WebSocketMessage;
 
 				switch (message.type) {
-					case 'current_location': {
+					case "current_location": {
 						const locationMsg = message as CurrentLocationMessage;
 						const position: Position = {
 							latitude: locationMsg.payload.latitude,
 							longitude: locationMsg.payload.longitude,
 							timestamp: locationMsg.payload.timestamp,
-							speed_knots: locationMsg.payload.speed_knots
+							speed_knots: locationMsg.payload.speed_knots,
 						};
 
 						setCurrentLocation(position);
@@ -50,44 +50,51 @@ export function useLatLngList(url: string) {
 						break;
 					}
 
-					case 'ride_started': {
+					case "ride_started": {
 						const rideMsg = message as RideStartedMessage;
 						const newRide: RideSummary = {
 							id: rideMsg.payload.ride_id,
 							name: rideMsg.payload.name,
-							start_time: rideMsg.payload.start_time
+							start_time: rideMsg.payload.start_time,
 						};
 
 						setRideState({
 							currentRide: newRide,
-							ridePositions: [rideMsg.payload.initial_position]
+							ridePositions: [rideMsg.payload.initial_position],
 						});
 
 						// Clear previous live tracking data for new ride
-						setLatLngList([{
-							lat: rideMsg.payload.initial_position.latitude,
-							lng: rideMsg.payload.initial_position.longitude
-						}]);
+						setLatLngList([
+							{
+								lat: rideMsg.payload.initial_position.latitude,
+								lng: rideMsg.payload.initial_position.longitude,
+							},
+						]);
 						break;
 					}
 
-					case 'ride_position_added': {
+					case "ride_position_added": {
 						const positionMsg = message as RidePositionAddedMessage;
-						setRideState(prev => ({
+						setRideState((prev) => ({
 							...prev,
-							ridePositions: [...prev.ridePositions, positionMsg.payload.position]
+							ridePositions: [
+								...prev.ridePositions,
+								positionMsg.payload.position,
+							],
 						}));
 						break;
 					}
 
-					case 'ride_ended': {
+					case "ride_ended": {
 						const endMsg = message as RideEndedMessage;
-						setRideState(prev => ({
+						setRideState((prev) => ({
 							...prev,
-							currentRide: prev.currentRide ? {
-								...prev.currentRide,
-								end_time: endMsg.payload.end_time
-							} : null
+							currentRide: prev.currentRide
+								? {
+										...prev.currentRide,
+										end_time: endMsg.payload.end_time,
+									}
+								: null,
 						}));
 						break;
 					}
@@ -95,13 +102,19 @@ export function useLatLngList(url: string) {
 					default:
 						// Fallback for old message format (backward compatibility)
 						const data = message as any;
-						if (typeof data.latitude === "number" && typeof data.longitude === "number") {
+						if (
+							typeof data.latitude === "number" &&
+							typeof data.longitude === "number"
+						) {
 							setLatLngList((prevList) => [
 								...prevList,
 								{ lat: data.latitude, lng: data.longitude },
 							]);
 						} else {
-							console.warn("[useLatLngList] Received unknown message type:", message);
+							console.warn(
+								"[useLatLngList] Received unknown message type:",
+								message,
+							);
 						}
 				}
 			} catch (error) {
@@ -115,6 +128,6 @@ export function useLatLngList(url: string) {
 		readyState,
 		sendMessage,
 		currentLocation,
-		rideState
+		rideState,
 	};
 }

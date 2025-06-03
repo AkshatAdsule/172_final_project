@@ -6,7 +6,7 @@
 }
 
 /* Ensure the map takes full dimensions */
-.liveRoute>div {
+.liveRoute > div {
 	width: 100% !important;
 	height: 100% !important;
 }

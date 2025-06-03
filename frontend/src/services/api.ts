@@ -1,55 +1,63 @@
-import type { RideSummary, RideDetail } from '../types';
+import type { RideSummary, RideDetail } from "../types";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
+const API_BASE_URL =
+	import.meta.env.VITE_API_BASE_URL || "http://localhost:8080/api";
 
 export class ApiService {
-    private static async request<T>(endpoint: string, options?: RequestInit): Promise<T> {
-        const url = `${API_BASE_URL}${endpoint}`;
+	private static async request<T>(
+		endpoint: string,
+		options?: RequestInit,
+	): Promise<T> {
+		const url = `${API_BASE_URL}${endpoint}`;
 
-        try {
-            const response = await fetch(url, {
-                headers: {
-                    'Content-Type': 'application/json',
-                    ...options?.headers,
-                },
-                ...options,
-            });
+		try {
+			const response = await fetch(url, {
+				headers: {
+					"Content-Type": "application/json",
+					...options?.headers,
+				},
+				...options,
+			});
 
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
+			if (!response.ok) {
+				throw new Error(`HTTP error! status: ${response.status}`);
+			}
 
-            return await response.json();
-        } catch (error) {
-            console.error(`API request failed for ${endpoint}:`, error);
-            throw error;
-        }
-    }
+			return await response.json();
+		} catch (error) {
+			console.error(`API request failed for ${endpoint}:`, error);
+			throw error;
+		}
+	}
 
-    /**
-     * Get all rides summary
-     * @param page - Page number (1-based)
-     * @param limit - Number of rides per page
-     * @param date - Filter by start date (YYYY-MM-DD format)
-     */
-    static async getRides(page = 1, limit = 10, date?: string): Promise<RideSummary[]> {
-        const params = new URLSearchParams({
-            page: page.toString(),
-            limit: limit.toString(),
-        });
+	/**
+	 * Get all rides summary
+	 * @param page - Page number (1-based)
+	 * @param limit - Number of rides per page
+	 * @param date - Filter by start date (YYYY-MM-DD format)
+	 */
+	static async getRides(
+		page = 1,
+		limit = 10,
+		date?: string,
+	): Promise<RideSummary[]> {
+		const params = new URLSearchParams({
+			page: page.toString(),
+			limit: limit.toString(),
+		});
 
-        if (date) {
-            params.append('date', date);
-        }
+		if (date) {
+			params.append("date", date);
+		}
 
-        return this.request<RideSummary[]>(`/rides?${params.toString()}`);
-    }
+		return this.request<RideSummary[]>(`/rides?${params.toString()}`);
+	}
 
-    /**
-     * Get detailed information for a specific ride
-     * @param rideId - The ID of the ride
-     */
-    static async getRideDetail(rideId: number): Promise<RideDetail> {
-        return this.request<RideDetail>(`/rides/${rideId}`);
-    }
-} 
+	/**
+	 * Get detailed information for a specific ride
+	 * @param rideId - The ID of the ride
+	 */
+	static async getRideDetail(rideId: number): Promise<RideDetail> {
+		return this.request<RideDetail>(`/rides/${rideId}`);
+	}
+}

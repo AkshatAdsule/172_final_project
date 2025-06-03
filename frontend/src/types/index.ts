@@ -27,12 +27,16 @@ export interface RideDetail {
 
 // WebSocket message types based on planning document
 export interface WebSocketMessage {
-	type: 'current_location' | 'ride_started' | 'ride_position_added' | 'ride_ended';
+	type:
+		| "current_location"
+		| "ride_started"
+		| "ride_position_added"
+		| "ride_ended";
 	payload: any;
 }
 
 export interface CurrentLocationMessage extends WebSocketMessage {
-	type: 'current_location';
+	type: "current_location";
 	payload: {
 		latitude: number;
 		longitude: number;
@@ -42,7 +46,7 @@ export interface CurrentLocationMessage extends WebSocketMessage {
 }
 
 export interface RideStartedMessage extends WebSocketMessage {
-	type: 'ride_started';
+	type: "ride_started";
 	payload: {
 		ride_id: number;
 		name: string;
@@ -52,7 +56,7 @@ export interface RideStartedMessage extends WebSocketMessage {
 }
 
 export interface RidePositionAddedMessage extends WebSocketMessage {
-	type: 'ride_position_added';
+	type: "ride_position_added";
 	payload: {
 		ride_id: number;
 		position: Position;
@@ -60,7 +64,7 @@ export interface RidePositionAddedMessage extends WebSocketMessage {
 }
 
 export interface RideEndedMessage extends WebSocketMessage {
-	type: 'ride_ended';
+	type: "ride_ended";
 	payload: {
 		ride_id: number;
 		end_time: string;

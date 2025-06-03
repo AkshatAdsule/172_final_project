@@ -11,8 +11,8 @@ export default function Sidebar() {
 
 	const formatTime = (dateString: string) => {
 		return new Date(dateString).toLocaleTimeString([], {
-			hour: '2-digit',
-			minute: '2-digit'
+			hour: "2-digit",
+			minute: "2-digit",
 		});
 	};
 
@@ -37,20 +37,26 @@ export default function Sidebar() {
 					<div className={styles.empty}>No rides found</div>
 				)}
 
-				{!loading && !error && rides.map((ride) => (
-					<Link key={ride.id} to={"/rides/$rideId"} params={{ rideId: ride.id.toString() }}>
-						<div className={styles.ride}>
-							<span className={styles.name}>{ride.name}</span>
-							<span className={styles.date}>
-								{formatDate(ride.start_time)}
-							</span>
-							<span className={styles.time}>
-								{formatTime(ride.start_time)}
-								{ride.end_time && ` - ${formatTime(ride.end_time)}`}
-							</span>
-						</div>
-					</Link>
-				))}
+				{!loading &&
+					!error &&
+					rides.map((ride) => (
+						<Link
+							key={ride.id}
+							to={"/rides/$rideId"}
+							params={{ rideId: ride.id.toString() }}
+						>
+							<div className={styles.ride}>
+								<span className={styles.name}>{ride.name}</span>
+								<span className={styles.date}>
+									{formatDate(ride.start_time)}
+								</span>
+								<span className={styles.time}>
+									{formatTime(ride.start_time)}
+									{ride.end_time && ` - ${formatTime(ride.end_time)}`}
+								</span>
+							</div>
+						</Link>
+					))}
 			</div>
 		</nav>
 	);
