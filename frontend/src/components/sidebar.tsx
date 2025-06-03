@@ -1,9 +1,42 @@
 import { Link } from "@tanstack/react-router";
 import { useRides } from "../hooks/useRides";
+import { useEffect, useRef, useState } from "react";
 import styles from "./sidebar.module.css";
 
 export default function Sidebar() {
 	const { rides, loading, error } = useRides();
+	const ridesRef = useRef<HTMLDivElement>(null);
+	const [isScrolling, setIsScrolling] = useState(false);
+	const scrollTimeoutRef = useRef<number | undefined>(undefined);
+
+	// Handle scroll events for auto-hide scrollbar
+	useEffect(() => {
+		const ridesElement = ridesRef.current;
+		if (!ridesElement) return;
+
+		const handleScroll = () => {
+			setIsScrolling(true);
+
+			// Clear existing timeout
+			if (scrollTimeoutRef.current !== undefined) {
+				window.clearTimeout(scrollTimeoutRef.current);
+			}
+
+			// Set timeout to hide scrollbar after 1.5 seconds of no scrolling
+			scrollTimeoutRef.current = window.setTimeout(() => {
+				setIsScrolling(false);
+			}, 1500);
+		};
+
+		ridesElement.addEventListener("scroll", handleScroll);
+
+		return () => {
+			ridesElement.removeEventListener("scroll", handleScroll);
+			if (scrollTimeoutRef.current !== undefined) {
+				window.clearTimeout(scrollTimeoutRef.current);
+			}
+		};
+	}, []);
 
 	const formatDate = (dateString: string) => {
 		return new Date(dateString).toLocaleDateString();
@@ -24,12 +57,16 @@ export default function Sidebar() {
 				</h1>
 			</div>
 			<hr />
-			<div className={styles.rides}>
+			<div className={styles.ridesHeader}>
 				<Link to="/rides/live">
 					<div>Live Track</div>
 				</Link>
 				<hr />
-
+			</div>
+			<div
+				ref={ridesRef}
+				className={`${styles.rides} ${isScrolling ? styles.scrolling : ""}`}
+			>
 				{loading && <div className={styles.loading}>Loading rides...</div>}
 				{error && <div className={styles.error}>Error: {error}</div>}
 
@@ -44,6 +81,9 @@ export default function Sidebar() {
 							key={ride.id}
 							to={"/rides/$rideId"}
 							params={{ rideId: ride.id.toString() }}
+							activeProps={{
+								className: styles.activeRide,
+							}}
 						>
 							<div className={styles.ride}>
 								<span className={styles.name}>{ride.name}</span>
