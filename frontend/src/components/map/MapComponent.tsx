@@ -13,7 +13,7 @@ interface MapComponentProps {
 export function MapComponent({
 	latLngList,
 	defaultCenter = { lat: 37.774929, lng: -122.419418 }, // Default to SF
-	defaultZoom = 17,
+	defaultZoom = 19,
 }: MapComponentProps) {
 	const map = useMap();
 
@@ -41,6 +41,10 @@ export function MapComponent({
 				right: 40,
 				bottom: 40,
 			});
+
+			if (map.getZoom()! > defaultZoom) {
+				map.setZoom(defaultZoom);
+			}
 		} else {
 			// Center the map considering the sidebar offset
 			const center = new google.maps.LatLng(

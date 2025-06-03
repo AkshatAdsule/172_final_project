@@ -19,6 +19,7 @@ import (
 	"b3/server/util"
 	"b3/server/ws"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
 
@@ -95,6 +96,8 @@ func main() {
 	fmt.Println("MQTT Listener and processor started. Press Ctrl+C to stop server.")
 
 	router := gin.Default()
+
+	router.Use(cors.Default())
 
 	// Register API Handlers under /api group
 	apiGroup := router.Group("/api")
