@@ -23,7 +23,6 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-	"github.com/joho/godotenv"
 )
 
 // Moved the correct ShadowStateDesired struct definition here
@@ -51,10 +50,6 @@ type ShadowDocument struct {
 }
 
 func main() {
-	err := godotenv.Load()
-	if err != nil {
-		log.Println("Error loading .env file")
-	}
 	// Load configuration from file if it exists, otherwise use defaults
 	appConfig := config.Get()
 	if _, err := os.Stat("config.json"); err == nil {
@@ -106,9 +101,12 @@ func main() {
 		appConfig.MQTTBrokerURL,
 		appConfig.MQTTClientID,
 		appConfig.MQTTTopic,
-		appConfig.MQTTCertPath,
-		appConfig.MQTTKeyPath,
-		appConfig.MQTTRootCAPath,
+		appConfig.MQTTCertPEM,    // PEM content
+		appConfig.MQTTKeyPEM,     // PEM content
+		appConfig.MQTTRootCAPEM,  // PEM content
+		appConfig.MQTTCertPath,   // Fallback path
+		appConfig.MQTTKeyPath,    // Fallback path
+		appConfig.MQTTRootCAPath, // Fallback path
 	)
 	if err != nil {
 		log.Fatalf("Failed to subscribe to shadow updates: %v", err)
@@ -150,57 +148,6 @@ func main() {
 		crashNotifier.Close()
 	}
 	fmt.Println("Server shut down.")
-}
-
-// Old_main can be kept for testing or removed
-func Old_main() {
-	brokerURL := "tls://a1edew9tp1yb1x-ats.iot.us-east-1.amazonaws.com:8883"
-	clientID := "server"
-	topic := "$aws/things/akshat_cc3200board/shadow/update/accepted"
-	certPath := "certs/certificate.pem.crt"
-	keyPath := "certs/private.pem.key"
-	caPath := "certs/AmazonRootCA1.pem"
-
-	msgChan, errChan, closeFn, err := mqttsubscriber.SubscribeToShadowUpdates(brokerURL, clientID, topic, certPath, keyPath, caPath)
-	if err != nil {
-		log.Fatalf("Failed to subscribe to shadow updates: %v", err)
-	}
-	defer closeFn()
-
-	fmt.Println("Listening for new events. Press Ctrl+C to stop.")
-
-	// Set up signal handling for graceful shutdown
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
-
-	// Goroutine to listen for messages and errors
-	go func() {
-		for {
-			select {
-			case msgPayload, ok := <-msgChan:
-				if !ok {
-					log.Println("Message channel closed.")
-					return // Exit goroutine if channel is closed
-				}
-				fmt.Printf("Received shadow update: %s\n", string(msgPayload))
-				// Process the message payload here
-			case err, ok := <-errChan:
-				if !ok {
-					log.Println("Error channel closed.")
-					return // Exit goroutine if channel is closed
-				}
-				log.Printf("Error from MQTT subscriber: %v", err)
-				// Potentially attempt to reconnect or handle the error
-				return // Exit goroutine on error for now
-			}
-		}
-	}()
-
-	// Wait for signal
-	<-sigChan
-
-	fmt.Println("Shutting down gracefully...")
-	// closeFn() is called by defer
 }
 
 func handleMqttMessageProcessing(msgChan <-chan []byte, errChan <-chan error, rideManager *ride.RideManager, appCfg config.Config, crashNotifier *snsnotifier.Notifier) {
