@@ -1,4 +1,5 @@
 import styles from "./SpeedLegend.module.css";
+import { formatSpeedMph } from "../../utils/speed";
 
 interface SpeedLegendProps {
 	minSpeed: number;
@@ -43,7 +44,7 @@ export function SpeedLegend({ minSpeed, maxSpeed }: SpeedLegendProps) {
 		const speed = maxSpeed - (maxSpeed - minSpeed) * (i / steps); // Reversed: start from max
 		const position = (i / steps) * 100;
 		labels.push({
-			speed: speed.toFixed(1),
+			speed: formatSpeedMph(speed),
 			position,
 		});
 	}
@@ -54,7 +55,7 @@ export function SpeedLegend({ minSpeed, maxSpeed }: SpeedLegendProps) {
 
 	return (
 		<div className={styles.speedLegend}>
-			<div className={styles.title}>Speed (knots)</div>
+			<div className={styles.title}>Speed (mph)</div>
 			<div className={styles.gradientContainer}>
 				<div className={styles.gradientBar} style={gradientStyle} />
 				<div className={styles.labels}>

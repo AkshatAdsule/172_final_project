@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { MapComponent } from "../../components/map/MapComponent";
 import { useLatLng } from "../../hooks/useLatLng";
+import { formatSpeedMph } from "../../utils/speed";
 import styles from "./styles/live.module.css";
 
 export const Route = createFileRoute("/rides/live")({
@@ -19,7 +20,7 @@ function RouteComponent() {
 					<div>Lat: {currentLocation.latitude.toFixed(6)}</div>
 					<div>Lng: {currentLocation.longitude.toFixed(6)}</div>
 					{currentLocation.speed_knots && (
-						<div>Speed: {currentLocation.speed_knots.toFixed(1)} knots</div>
+						<div>Speed: {formatSpeedMph(currentLocation.speed_knots)} mph</div>
 					)}
 					<div>
 						Time: {new Date(currentLocation.timestamp).toLocaleTimeString()}

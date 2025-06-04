@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { MapComponent } from "../../components/map/MapComponent";
 import { useRideDetail } from "../../hooks/useRides";
+import { formatSpeedMph } from "../../utils/speed";
 import type { LatLng } from "../../types";
 import styles from "./styles/rideDetail.module.css";
 
@@ -108,11 +109,11 @@ function RouteComponent() {
 						<>
 							<div className={styles.detailItem}>
 								<span className={styles.label}>Avg Speed:</span>
-								<span>{stats.avgSpeed.toFixed(1)} knots</span>
+								<span>{formatSpeedMph(stats.avgSpeed)} mph</span>
 							</div>
 							<div className={styles.detailItem}>
 								<span className={styles.label}>Max Speed:</span>
-								<span>{stats.maxSpeed.toFixed(1)} knots</span>
+								<span>{formatSpeedMph(stats.maxSpeed)} mph</span>
 							</div>
 						</>
 					)}
