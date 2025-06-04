@@ -1,21 +1,43 @@
 import { Map, useMap } from "@vis.gl/react-google-maps";
-import { useEffect } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Polyline } from "./polyline";
+import { SpeedPolyline } from "./SpeedPolyline";
+import { SpeedLegend } from "./SpeedLegend";
 import type { LatLng } from "../../types";
 import { DARK_STYLE } from "./dark-style";
 
 interface MapComponentProps {
-	latLngList: LatLng[];
+	latLngList?: LatLng[];
 	defaultCenter?: { lat: number; lng: number };
 	defaultZoom?: number;
 }
 
+// Helper function to check if path has speed data
+function hasSpeedData(path: LatLng[]): boolean {
+	return path.some((point) => point.speed_knots !== undefined);
+}
+
 export function MapComponent({
-	latLngList,
+	latLngList = [],
 	defaultCenter = { lat: 37.774929, lng: -122.419418 }, // Default to SF
 	defaultZoom = 19,
 }: MapComponentProps) {
 	const map = useMap();
+	const [speedRange, setSpeedRange] = useState<{
+		min: number;
+		max: number;
+	} | null>(null);
+
+	// Determine whether to use speed polyline
+	const useSpeedPolyline = hasSpeedData(latLngList);
+
+	// Handle speed range updates from SpeedPolyline - wrapped in useCallback to prevent infinite loops
+	const handleSpeedRangeChange = useCallback(
+		(minSpeed: number, maxSpeed: number) => {
+			setSpeedRange({ min: minSpeed, max: maxSpeed });
+		},
+		[],
+	);
 
 	// Setup polyline and calculate bounds
 	useEffect(() => {
@@ -60,19 +82,31 @@ export function MapComponent({
 	}, [map, latLngList, defaultCenter, defaultZoom]);
 
 	return (
-		<Map
-			styles={DARK_STYLE}
-			defaultCenter={defaultCenter}
-			defaultZoom={defaultZoom}
-			cameraControl={false}
-			disableDefaultUI={true}
-			zoomControl={false}
-			gestureHandling={"none"}
-			disableDoubleClickZoom={true}
-			scrollwheel={false}
-			style={{ width: "100%", height: "100%" }}
-		>
-			<Polyline path={latLngList} strokeColor={"#ffffffde"} />
-		</Map>
+		<div style={{ position: "relative", width: "100%", height: "100%" }}>
+			<Map
+				styles={DARK_STYLE}
+				defaultCenter={defaultCenter}
+				defaultZoom={defaultZoom}
+				cameraControl={false}
+				disableDefaultUI={true}
+				zoomControl={false}
+				gestureHandling={"none"}
+				disableDoubleClickZoom={true}
+				scrollwheel={false}
+				style={{ width: "100%", height: "100%" }}
+			>
+				{useSpeedPolyline ? (
+					<SpeedPolyline
+						path={latLngList}
+						onSpeedRangeChange={handleSpeedRangeChange}
+					/>
+				) : (
+					<Polyline path={latLngList} strokeColor={"#ffffffde"} />
+				)}
+			</Map>
+			{useSpeedPolyline && speedRange && speedRange.min !== speedRange.max && (
+				<SpeedLegend minSpeed={speedRange.min} maxSpeed={speedRange.max} />
+			)}
+		</div>
 	);
 }

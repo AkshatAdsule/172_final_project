@@ -1,6 +1,7 @@
 export interface LatLng {
 	lat: number;
 	lng: number;
+	speed_knots?: number;
 }
 
 export interface Position {

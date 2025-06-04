@@ -1,0 +1,49 @@
+.speedLegend {
+	position: absolute;
+	bottom: 20px;
+	right: 20px;
+	background: rgba(30, 30, 30, 0.9);
+	border: 1px solid rgba(255, 255, 255, 0.1);
+	border-radius: 8px;
+	padding: 12px;
+	color: white;
+	font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+	backdrop-filter: blur(10px);
+	z-index: 1000;
+}
+
+.title {
+	font-size: 12px;
+	font-weight: 600;
+	margin-bottom: 8px;
+	text-align: center;
+	color: rgba(255, 255, 255, 0.9);
+}
+
+.gradientContainer {
+	display: flex;
+	align-items: stretch;
+	gap: 8px;
+	height: 80px;
+}
+
+.gradientBar {
+	width: 8px;
+	border-radius: 4px;
+	border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.labels {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	justify-content: space-between;
+	height: 100%;
+}
+
+.label {
+	font-size: 11px;
+	color: rgba(255, 255, 255, 0.8);
+	line-height: 1;
+	transform: translateY(-50%);
+} 

@@ -40,6 +40,7 @@ function RouteComponent() {
 	const latLngList: LatLng[] = rideDetail.positions.map((position) => ({
 		lat: position.latitude,
 		lng: position.longitude,
+		speed_knots: position.speed_knots,
 	}));
 
 	const formatDateTime = (dateString: string) => {
@@ -60,6 +61,22 @@ function RouteComponent() {
 		}
 		return `${minutes}m`;
 	};
+
+	const calculateStats = () => {
+		const speeds = rideDetail.positions
+			.map((p) => p.speed_knots)
+			.filter((speed): speed is number => speed !== undefined);
+
+		if (speeds.length === 0) return null;
+
+		const avgSpeed =
+			speeds.reduce((sum, speed) => sum + speed, 0) / speeds.length;
+		const maxSpeed = Math.max(...speeds);
+
+		return { avgSpeed, maxSpeed };
+	};
+
+	const stats = calculateStats();
 
 	return (
 		<div className={styles.rideDetail}>
@@ -87,6 +104,18 @@ function RouteComponent() {
 						<span className={styles.label}>Points:</span>
 						<span>{rideDetail.positions.length}</span>
 					</div>
+					{stats && (
+						<>
+							<div className={styles.detailItem}>
+								<span className={styles.label}>Avg Speed:</span>
+								<span>{stats.avgSpeed.toFixed(1)} knots</span>
+							</div>
+							<div className={styles.detailItem}>
+								<span className={styles.label}>Max Speed:</span>
+								<span>{stats.maxSpeed.toFixed(1)} knots</span>
+							</div>
+						</>
+					)}
 				</div>
 			</div>
 		</div>

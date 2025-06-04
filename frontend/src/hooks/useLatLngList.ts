@@ -42,10 +42,14 @@ export function useLatLngList(url: string) {
 
 						setCurrentLocation(position);
 
-						// Add to latLngList for live tracking
+						// Add to latLngList with speed data
 						setLatLngList((prevList) => [
 							...prevList,
-							{ lat: position.latitude, lng: position.longitude },
+							{
+								lat: position.latitude,
+								lng: position.longitude,
+								speed_knots: position.speed_knots,
+							},
 						]);
 						break;
 					}
@@ -68,6 +72,7 @@ export function useLatLngList(url: string) {
 							{
 								lat: rideMsg.payload.initial_position.latitude,
 								lng: rideMsg.payload.initial_position.longitude,
+								speed_knots: rideMsg.payload.initial_position.speed_knots,
 							},
 						]);
 						break;
