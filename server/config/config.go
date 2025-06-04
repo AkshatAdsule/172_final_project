@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"log"
 	"os"
-	"path/filepath"
 	"time"
 
 	"github.com/joho/godotenv"
@@ -22,8 +21,6 @@ type Config struct {
 	MQTTCertPEM       string         `json:"-"`                           // Loaded from env, not json
 	MQTTKeyPEM        string         `json:"-"`                           // Loaded from env, not json
 	MQTTRootCAPEM     string         `json:"-"`                           // Loaded from env, not json
-	DatabasePath      string         `json:"database_path"`               // e.g., "data/rides.db" (for SQLite)
-	DatabaseType      string         `json:"database_type"`               // "sqlite" or "postgres"
 	PostgresConnStr   string         `json:"-"`                           // Loaded from env, not json
 	ServerAddress     string         `json:"server_address"`              // e.g., ":8080"
 	RideStartDistance float64        `json:"ride_start_distance_meters"`  // meters
@@ -43,11 +40,9 @@ var defaultConfig = Config{
 	MQTTBrokerURL:     "tls://a1edew9tp1yb1x-ats.iot.us-east-1.amazonaws.com:8883",
 	MQTTClientID:      "server-ride-tracker",
 	MQTTTopic:         "$aws/things/akshat_cc3200board/shadow/update/accepted",
-	MQTTCertPath:      "certs/certificate.pem.crt",       // Relative to executable or defined base path
-	MQTTKeyPath:       "certs/private.pem.key",           // Relative
-	MQTTRootCAPath:    "certs/AmazonRootCA1.pem",         // Relative
-	DatabasePath:      filepath.Join("data", "rides.db"), // Store in a 'data' subdirectory
-	DatabaseType:      "sqlite",                          // Default to SQLite
+	MQTTCertPath:      "certs/certificate.pem.crt", // Relative to executable or defined base path
+	MQTTKeyPath:       "certs/private.pem.key",     // Relative
+	MQTTRootCAPath:    "certs/AmazonRootCA1.pem",   // Relative
 	ServerAddress:     ":8080",
 	RideStartDistance: 8.0,                   // meters
 	RideEndInactivity: 120,                   // seconds (2 minutes)
@@ -115,8 +110,7 @@ func init() {
 	// Load PostgreSQL connection string from environment if available
 	if postgresConn := os.Getenv("POSTGRES_CONNECTION_STRING"); postgresConn != "" {
 		AppConfig.PostgresConnStr = postgresConn
-		AppConfig.DatabaseType = "postgres"
-		log.Println("PostgreSQL connection string loaded from environment, switching to PostgreSQL")
+		log.Println("PostgreSQL connection string loaded from environment")
 	}
 
 	// For now, load defaults. Later, we can load from a file or env vars.
@@ -131,16 +125,6 @@ func init() {
 		AppConfig.PSTLocation = time.FixedZone("PST-Fallback", -7*60*60)
 	} else {
 		AppConfig.PSTLocation = loc
-	}
-
-	// Ensure the directory for the database exists
-	dbDir := filepath.Dir(AppConfig.DatabasePath)
-	if _, err := os.Stat(dbDir); os.IsNotExist(err) {
-		if mkDirErr := os.MkdirAll(dbDir, 0755); mkDirErr != nil {
-			// log.Fatalf("Failed to create data directory %s: %v", dbDir, mkDirErr)
-			// For now, we'll let it potentially fail later if DB can't be created.
-			// In a real app, you'd want to handle this more robustly.
-		}
 	}
 }
 
@@ -173,7 +157,6 @@ func LoadConfigFromFile(filePath string) (Config, error) {
 	// Preserve PostgreSQL connection string from environment
 	if AppConfig.PostgresConnStr != "" {
 		cfg.PostgresConnStr = AppConfig.PostgresConnStr
-		cfg.DatabaseType = "postgres"
 	}
 
 	// Ensure PSTLocation is loaded after reading from file

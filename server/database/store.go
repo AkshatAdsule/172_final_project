@@ -8,51 +8,34 @@ import (
 	"log"
 	"time"
 
-	_ "github.com/lib/pq"           // PostgreSQL driver
-	_ "github.com/mattn/go-sqlite3" // SQLite driver
+	_ "github.com/lib/pq" // PostgreSQL driver
 )
 
 var dbInstance *sql.DB
 
-// InitDB initializes the database connection using the configuration
-// and ensures tables are created.
+// InitDB initializes the PostgreSQL database connection and ensures tables are created.
 func InitDB() (*sql.DB, error) {
 	cfg := config.Get()
 
-	var err error
-	var driver string
-	var dataSource string
-
-	switch cfg.DatabaseType {
-	case "postgres":
-		if cfg.PostgresConnStr == "" {
-			return nil, fmt.Errorf("PostgreSQL connection string not provided")
-		}
-		driver = "postgres"
-		dataSource = cfg.PostgresConnStr
-		log.Println("Connecting to PostgreSQL database...")
-	case "sqlite":
-		driver = "sqlite3"
-		dataSource = cfg.DatabasePath + "?_foreign_keys=on" // Enable foreign key support
-		log.Printf("Connecting to SQLite database at %s...", cfg.DatabasePath)
-	default:
-		return nil, fmt.Errorf("unsupported database type: %s", cfg.DatabaseType)
+	if cfg.PostgresConnStr == "" {
+		return nil, fmt.Errorf("PostgreSQL connection string not provided. Please set POSTGRES_CONNECTION_STRING environment variable")
 	}
 
-	dbInstance, err = sql.Open(driver, dataSource)
+	var err error
+	dbInstance, err = sql.Open("postgres", cfg.PostgresConnStr)
 	if err != nil {
-		return nil, fmt.Errorf("failed to open database: %w", err)
+		return nil, fmt.Errorf("failed to open PostgreSQL database: %w", err)
 	}
 
 	if err = dbInstance.Ping(); err != nil {
-		return nil, fmt.Errorf("failed to ping database: %w", err)
+		return nil, fmt.Errorf("failed to ping PostgreSQL database: %w", err)
 	}
 
-	if err = createTables(dbInstance, cfg.DatabaseType); err != nil {
+	if err = createTables(dbInstance); err != nil {
 		return nil, fmt.Errorf("failed to create tables: %w", err)
 	}
 
-	log.Printf("Database initialized and tables created successfully using %s", cfg.DatabaseType)
+	log.Println("PostgreSQL database initialized and tables created successfully")
 	return dbInstance, nil
 }
 
@@ -65,52 +48,28 @@ func GetDB() *sql.DB {
 	return dbInstance
 }
 
-func createTables(db *sql.DB, dbType string) error {
+func createTables(db *sql.DB) error {
 	var ridesTableSQL string
 	var positionsTableSQL string
 
-	switch dbType {
-	case "postgres":
-		ridesTableSQL = `
-		CREATE TABLE IF NOT EXISTS rides (
-			id SERIAL PRIMARY KEY,
-			name TEXT NOT NULL,
-			start_time TIMESTAMP NOT NULL,
-			end_time TIMESTAMP
-		);`
+	ridesTableSQL = `
+	CREATE TABLE IF NOT EXISTS rides (
+		id SERIAL PRIMARY KEY,
+		name TEXT NOT NULL,
+		start_time TIMESTAMP NOT NULL,
+		end_time TIMESTAMP
+	);`
 
-		positionsTableSQL = `
-		CREATE TABLE IF NOT EXISTS ride_positions (
-			id SERIAL PRIMARY KEY,
-			ride_id INTEGER NOT NULL,
-			latitude REAL NOT NULL,
-			longitude REAL NOT NULL,
-			speed_knots REAL,
-			timestamp TIMESTAMP NOT NULL,
-			FOREIGN KEY (ride_id) REFERENCES rides(id) ON DELETE CASCADE 
-		);`
-	case "sqlite":
-		ridesTableSQL = `
-		CREATE TABLE IF NOT EXISTS rides (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
-			name TEXT NOT NULL,
-			start_time DATETIME NOT NULL,
-			end_time DATETIME
-		);`
-
-		positionsTableSQL = `
-		CREATE TABLE IF NOT EXISTS ride_positions (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
-			ride_id INTEGER NOT NULL,
-			latitude REAL NOT NULL,
-			longitude REAL NOT NULL,
-			speed_knots REAL,
-			timestamp DATETIME NOT NULL,
-			FOREIGN KEY (ride_id) REFERENCES rides(id) ON DELETE CASCADE 
-		);` // Added ON DELETE CASCADE
-	default:
-		return fmt.Errorf("unsupported database type: %s", dbType)
-	}
+	positionsTableSQL = `
+	CREATE TABLE IF NOT EXISTS ride_positions (
+		id SERIAL PRIMARY KEY,
+		ride_id INTEGER NOT NULL,
+		latitude REAL NOT NULL,
+		longitude REAL NOT NULL,
+		speed_knots REAL,
+		timestamp TIMESTAMP NOT NULL,
+		FOREIGN KEY (ride_id) REFERENCES rides(id) ON DELETE CASCADE 
+	);`
 
 	if _, err := db.Exec(ridesTableSQL); err != nil {
 		return fmt.Errorf("failed to create rides table: %w", err)
@@ -123,33 +82,20 @@ func createTables(db *sql.DB, dbType string) error {
 
 // CreateRide inserts a new ride into the database.
 func CreateRide(db *sql.DB, name string, startTime time.Time) (int64, error) {
-	stmt, err := db.Prepare("INSERT INTO rides(name, start_time) VALUES(?, ?)")
-	if err != nil {
-		return 0, fmt.Errorf("failed to prepare CreateRide statement: %w", err)
-	}
-	defer stmt.Close()
-
-	res, err := stmt.Exec(name, startTime.UTC()) // Ensure storing in UTC
+	// PostgreSQL doesn't support LastInsertId, use RETURNING instead
+	var id int64
+	query := "INSERT INTO rides(name, start_time) VALUES($1, $2) RETURNING id"
+	err := db.QueryRow(query, name, startTime.UTC()).Scan(&id)
 	if err != nil {
 		return 0, fmt.Errorf("failed to execute CreateRide statement: %w", err)
-	}
-
-	id, err := res.LastInsertId()
-	if err != nil {
-		return 0, fmt.Errorf("failed to get last insert ID for CreateRide: %w", err)
 	}
 	return id, nil
 }
 
 // AddPositionToRide adds a new GPS position to an existing ride.
 func AddPositionToRide(db *sql.DB, rideID int64, position models.Position) error {
-	stmt, err := db.Prepare("INSERT INTO ride_positions(ride_id, latitude, longitude, speed_knots, timestamp) VALUES(?, ?, ?, ?, ?)")
-	if err != nil {
-		return fmt.Errorf("failed to prepare AddPositionToRide statement: %w", err)
-	}
-	defer stmt.Close()
-
-	_, err = stmt.Exec(rideID, position.Latitude, position.Longitude, position.SpeedKnots, position.Timestamp.UTC()) // Ensure storing in UTC
+	query := "INSERT INTO ride_positions(ride_id, latitude, longitude, speed_knots, timestamp) VALUES($1, $2, $3, $4, $5)"
+	_, err := db.Exec(query, rideID, position.Latitude, position.Longitude, position.SpeedKnots, position.Timestamp.UTC()) // Ensure storing in UTC
 	if err != nil {
 		return fmt.Errorf("failed to execute AddPositionToRide statement: %w", err)
 	}
@@ -158,13 +104,8 @@ func AddPositionToRide(db *sql.DB, rideID int64, position models.Position) error
 
 // EndRide updates the end_time of a ride.
 func EndRide(db *sql.DB, rideID int64, endTime time.Time) error {
-	stmt, err := db.Prepare("UPDATE rides SET end_time = ? WHERE id = ?")
-	if err != nil {
-		return fmt.Errorf("failed to prepare EndRide statement: %w", err)
-	}
-	defer stmt.Close()
-
-	_, err = stmt.Exec(endTime.UTC(), rideID) // Ensure storing in UTC
+	query := "UPDATE rides SET end_time = $1 WHERE id = $2"
+	_, err := db.Exec(query, endTime.UTC(), rideID) // Ensure storing in UTC
 	if err != nil {
 		return fmt.Errorf("failed to execute EndRide statement: %w", err)
 	}
@@ -176,7 +117,8 @@ func GetRideDetails(db *sql.DB, rideID int64) (*models.RideDetail, error) {
 	ride := &models.RideDetail{}
 	var endTime sql.NullTime // Handle NULL end_time
 
-	row := db.QueryRow("SELECT id, name, start_time, end_time FROM rides WHERE id = ?", rideID)
+	query := "SELECT id, name, start_time, end_time FROM rides WHERE id = $1"
+	row := db.QueryRow(query, rideID)
 	if err := row.Scan(&ride.ID, &ride.Name, &ride.StartTime, &endTime); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, fmt.Errorf("ride with ID %d not found", rideID)
@@ -187,7 +129,8 @@ func GetRideDetails(db *sql.DB, rideID int64) (*models.RideDetail, error) {
 		ride.EndTime = endTime.Time
 	}
 
-	rows, err := db.Query("SELECT latitude, longitude, speed_knots, timestamp FROM ride_positions WHERE ride_id = ? ORDER BY timestamp ASC", rideID)
+	query = "SELECT latitude, longitude, speed_knots, timestamp FROM ride_positions WHERE ride_id = $1 ORDER BY timestamp ASC"
+	rows, err := db.Query(query, rideID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query ride positions: %w", err)
 	}
@@ -263,10 +206,10 @@ func GetAllRidesSummaryWithPagination(db *sql.DB, page, limit int, dateFilter *t
 		// Filter by start date (same day)
 		startOfDay := time.Date(dateFilter.Year(), dateFilter.Month(), dateFilter.Day(), 0, 0, 0, 0, time.UTC)
 		endOfDay := startOfDay.Add(24 * time.Hour)
-		query = "SELECT id, name, start_time, end_time FROM rides WHERE start_time >= ? AND start_time < ? ORDER BY start_time DESC LIMIT ? OFFSET ?"
+		query = "SELECT id, name, start_time, end_time FROM rides WHERE start_time >= $1 AND start_time < $2 ORDER BY start_time DESC LIMIT $3 OFFSET $4"
 		args = []interface{}{startOfDay, endOfDay, limit, offset}
 	} else {
-		query = "SELECT id, name, start_time, end_time FROM rides ORDER BY start_time DESC LIMIT ? OFFSET ?"
+		query = "SELECT id, name, start_time, end_time FROM rides ORDER BY start_time DESC LIMIT $1 OFFSET $2"
 		args = []interface{}{limit, offset}
 	}
 
