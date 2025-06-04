@@ -226,14 +226,40 @@ func handleMqttMessageProcessing(msgChan <-chan []byte, errChan <-chan error, ri
 				if shadowDoc.State.Desired.Status == "CRASH_DETECTED" {
 					log.Printf("CRASH DETECTED! Sending emergency notification...")
 					if crashNotifier != nil && appCfg.SNSEnabled {
+						// Get the crash time in PST
+						crashTime := time.Unix(shadowDoc.Timestamp, 0).In(appCfg.PSTLocation)
+						timeStr := crashTime.Format("Monday, January 2, 2006 at 3:04 PM MST")
+
+						// Get location coordinates
+						latitude := shadowDoc.State.Desired.Latitude
+						longitude := shadowDoc.State.Desired.Longitude
+
+						// Create detailed emergency message
+						subject := "🚨 EMERGENCY ALERT - Crash Detected on Ivan's Bike Ride"
+						message := fmt.Sprintf(`EMERGENCY: A crash has been detected on Ivan's bike ride.
+
+📍 LOCATION: %f, %f
+🕐 TIME: %s
+⚠️  STATUS: Crash detection sensor triggered
+
+This is an automated alert from the bike tracking system. Please check on Ivan immediately and contact emergency services if needed.
+
+Google Maps link: https://maps.google.com/?q=%f,%f
+
+If this is a false alarm, please disregard this message.`,
+							latitude, longitude, timeStr, latitude, longitude)
+
 						crashMessage := snsnotifier.NotificationMessage{
 							TopicArn: appCfg.SNSTopicArn,
-							Subject:  "EMERGENCY ALERT - CRASH DETECTED",
-							Message:  "CRASH DETECTED!!!",
+							Subject:  subject,
+							Message:  message,
 							Attributes: map[string]string{
 								"event_type": "crash_detected",
 								"priority":   "critical",
-								"timestamp":  time.Now().UTC().Format(time.RFC3339),
+								"latitude":   fmt.Sprintf("%f", latitude),
+								"longitude":  fmt.Sprintf("%f", longitude),
+								"timestamp":  crashTime.Format(time.RFC3339),
+								"rider_name": "Ivan",
 							},
 						}
 
@@ -241,7 +267,8 @@ func handleMqttMessageProcessing(msgChan <-chan []byte, errChan <-chan error, ri
 						if err != nil {
 							log.Printf("Failed to send crash notification: %v", err)
 						} else {
-							log.Println("Crash notification sent successfully!")
+							log.Printf("Emergency crash notification sent successfully! Location: %f, %f at %s",
+								latitude, longitude, timeStr)
 						}
 					}
 					// Continue processing the message for GPS data even after crash detection
