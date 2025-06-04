@@ -103,6 +103,12 @@ func init() {
 		}
 	}
 
+	// Override ServerAddress with PORT environment variable if available
+	if port := os.Getenv("PORT"); port != "" {
+		AppConfig.ServerAddress = ":" + port
+		log.Printf("Server address set to %s from PORT environment variable", AppConfig.ServerAddress)
+	}
+
 	// For now, load defaults. Later, we can load from a file or env vars.
 	// AppConfig = defaultConfig // This line is now redundant due to above assignments
 
@@ -150,6 +156,9 @@ func LoadConfigFromFile(filePath string) (Config, error) {
 	}
 	if AppConfig.MQTTRootCAPEM != "" {
 		cfg.MQTTRootCAPEM = AppConfig.MQTTRootCAPEM
+	}
+	if AppConfig.ServerAddress != "" {
+		cfg.ServerAddress = AppConfig.ServerAddress
 	}
 
 	// Ensure PSTLocation is loaded after reading from file
