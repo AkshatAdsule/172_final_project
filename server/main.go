@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -16,11 +17,13 @@ import (
 	"b3/server/models"
 	"b3/server/mqttsubscriber"
 	"b3/server/ride"
+	"b3/server/snsnotifier"
 	"b3/server/util"
 	"b3/server/ws"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 )
 
 // Moved the correct ShadowStateDesired struct definition here
@@ -30,6 +33,7 @@ type ShadowStateDesired struct {
 	SpeedKnots float64 `json:"speed_knots"`
 	Timestamp  string  `json:"timestamp"` // "HHMMSS.SS"
 	ValidFix   bool    `json:"valid_fix"`
+	Status     string  `json:"status,omitempty"` // For crash detection
 }
 
 // ShadowState holds the overall state from the shadow document.
@@ -47,6 +51,10 @@ type ShadowDocument struct {
 }
 
 func main() {
+	err := godotenv.Load()
+	if err != nil {
+		log.Println("Error loading .env file")
+	}
 	// Load configuration from file if it exists, otherwise use defaults
 	appConfig := config.Get()
 	if _, err := os.Stat("config.json"); err == nil {
@@ -80,6 +88,20 @@ func main() {
 	go rideManager.CheckInactivityLoop(inactivityCheckInterval)
 	log.Println("RideManager initialized and inactivity checker started.")
 
+	// Initialize SNS notifier for crash detection
+	var crashNotifier *snsnotifier.Notifier
+	if appConfig.SNSEnabled && appConfig.SNSTopicArn != "" {
+		ctx := context.Background()
+		var err error
+		crashNotifier, err = snsnotifier.NewNotifier(ctx)
+		if err != nil {
+			log.Printf("Warning: Failed to initialize SNS crash notifier: %v", err)
+			crashNotifier = nil
+		} else {
+			log.Println("SNS crash notifier initialized successfully")
+		}
+	}
+
 	msgChan, errChan, closeFn, err := mqttsubscriber.SubscribeToShadowUpdates(
 		appConfig.MQTTBrokerURL,
 		appConfig.MQTTClientID,
@@ -92,7 +114,7 @@ func main() {
 		log.Fatalf("Failed to subscribe to shadow updates: %v", err)
 	}
 
-	go handleMqttMessageProcessing(msgChan, errChan, rideManager, appConfig)
+	go handleMqttMessageProcessing(msgChan, errChan, rideManager, appConfig, crashNotifier)
 	fmt.Println("MQTT Listener and processor started. Press Ctrl+C to stop server.")
 
 	router := gin.Default()
@@ -124,6 +146,9 @@ func main() {
 
 	fmt.Println("Shutting down gracefully...")
 	closeFn()
+	if crashNotifier != nil {
+		crashNotifier.Close()
+	}
 	fmt.Println("Server shut down.")
 }
 
@@ -178,7 +203,7 @@ func Old_main() {
 	// closeFn() is called by defer
 }
 
-func handleMqttMessageProcessing(msgChan <-chan []byte, errChan <-chan error, rideManager *ride.RideManager, appCfg config.Config) {
+func handleMqttMessageProcessing(msgChan <-chan []byte, errChan <-chan error, rideManager *ride.RideManager, appCfg config.Config, crashNotifier *snsnotifier.Notifier) {
 	// This function now only processes MQTT messages and passes them to RideManager
 	// WebSocket connection handling is done by ws.ServeWs and the ws.Hub
 	go func() {
@@ -195,6 +220,31 @@ func handleMqttMessageProcessing(msgChan <-chan []byte, errChan <-chan error, ri
 				if err := json.Unmarshal(message, &shadowDoc); err != nil {
 					log.Printf("Error unmarshalling shadow document: %v.", err)
 					continue
+				}
+
+				// Check for crash detection
+				if shadowDoc.State.Desired.Status == "CRASH_DETECTED" {
+					log.Printf("CRASH DETECTED! Sending emergency notification...")
+					if crashNotifier != nil && appCfg.SNSEnabled {
+						crashMessage := snsnotifier.NotificationMessage{
+							TopicArn: appCfg.SNSTopicArn,
+							Subject:  "EMERGENCY ALERT - CRASH DETECTED",
+							Message:  "CRASH DETECTED!!!",
+							Attributes: map[string]string{
+								"event_type": "crash_detected",
+								"priority":   "critical",
+								"timestamp":  time.Now().UTC().Format(time.RFC3339),
+							},
+						}
+
+						err := crashNotifier.PublishMessage(crashMessage)
+						if err != nil {
+							log.Printf("Failed to send crash notification: %v", err)
+						} else {
+							log.Println("Crash notification sent successfully!")
+						}
+					}
+					// Continue processing the message for GPS data even after crash detection
 				}
 
 				if shadowDoc.State.Desired.Timestamp == "" || !shadowDoc.State.Desired.ValidFix {

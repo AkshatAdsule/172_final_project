@@ -23,6 +23,11 @@ type Config struct {
 	RideEndStaticDist float64        `json:"ride_end_static_dist_meters"` // meters
 	Timezone          string         `json:"timezone"`                    // e.g., "America/Los_Angeles" for ride naming
 	PSTLocation       *time.Location // Loaded based on Timezone or default to PST
+
+	// SNS Configuration
+	SNSTopicArn string `json:"sns_topic_arn,omitempty"` // Default SNS topic ARN for notifications
+	SNSRegion   string `json:"sns_region,omitempty"`    // AWS region for SNS (optional, uses default AWS config if empty)
+	SNSEnabled  bool   `json:"sns_enabled"`             // Whether SNS notifications are enabled
 }
 
 var defaultConfig = Config{
@@ -39,6 +44,11 @@ var defaultConfig = Config{
 	RideEndStaticSecs: 120,                   // seconds (2 minutes)
 	RideEndStaticDist: 8.0,                   // meters
 	Timezone:          "America/Los_Angeles", // Default to PST as discussed
+
+	// SNS defaults
+	SNSTopicArn: "",    // To be set via config file or environment variable
+	SNSRegion:   "",    // Uses default AWS config region if empty
+	SNSEnabled:  false, // Disabled by default
 }
 
 // AppConfig is the global configuration instance.

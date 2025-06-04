@@ -11,5 +11,8 @@
     "ride_end_inactivity_seconds": 120,
     "ride_end_static_seconds": 120,
     "ride_end_static_dist_meters": 8.0,
-    "timezone": "America/Los_Angeles"
+    "timezone": "America/Los_Angeles",
+    "sns_topic_arn": "arn:aws:sns:us-east-1:591399376407:MyTopic",
+    "sns_region": "us-east-1",
+    "sns_enabled": true
 }
