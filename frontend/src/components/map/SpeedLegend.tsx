@@ -1,4 +1,3 @@
-import React from "react";
 import styles from "./SpeedLegend.module.css";
 
 interface SpeedLegendProps {
