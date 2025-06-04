@@ -1,6 +1,7 @@
 package mqttsubscriber
 
 import (
+	"crypto/rand"
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
@@ -75,6 +76,9 @@ func SubscribeToShadowUpdates(brokerURL, clientID, topic string, cfgMqttCertPEM,
 
 	opts := mqtt.NewClientOptions()
 	opts.AddBroker(brokerURL)
+	// add random suffix to clientID
+	clientID = clientID + "-" + rand.Text()
+	log.Printf("Client ID: %s", clientID)
 	opts.SetClientID(clientID)
 	opts.SetTLSConfig(tlsConfig)
 
