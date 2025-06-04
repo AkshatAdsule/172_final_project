@@ -22,7 +22,9 @@ type Config struct {
 	MQTTCertPEM       string         `json:"-"`                           // Loaded from env, not json
 	MQTTKeyPEM        string         `json:"-"`                           // Loaded from env, not json
 	MQTTRootCAPEM     string         `json:"-"`                           // Loaded from env, not json
-	DatabasePath      string         `json:"database_path"`               // e.g., "data/rides.db"
+	DatabasePath      string         `json:"database_path"`               // e.g., "data/rides.db" (for SQLite)
+	DatabaseType      string         `json:"database_type"`               // "sqlite" or "postgres"
+	PostgresConnStr   string         `json:"-"`                           // Loaded from env, not json
 	ServerAddress     string         `json:"server_address"`              // e.g., ":8080"
 	RideStartDistance float64        `json:"ride_start_distance_meters"`  // meters
 	RideEndInactivity int            `json:"ride_end_inactivity_seconds"` // seconds
@@ -45,6 +47,7 @@ var defaultConfig = Config{
 	MQTTKeyPath:       "certs/private.pem.key",           // Relative
 	MQTTRootCAPath:    "certs/AmazonRootCA1.pem",         // Relative
 	DatabasePath:      filepath.Join("data", "rides.db"), // Store in a 'data' subdirectory
+	DatabaseType:      "sqlite",                          // Default to SQLite
 	ServerAddress:     ":8080",
 	RideStartDistance: 8.0,                   // meters
 	RideEndInactivity: 120,                   // seconds (2 minutes)
@@ -109,6 +112,13 @@ func init() {
 		log.Printf("Server address set to %s from PORT environment variable", AppConfig.ServerAddress)
 	}
 
+	// Load PostgreSQL connection string from environment if available
+	if postgresConn := os.Getenv("POSTGRES_CONNECTION_STRING"); postgresConn != "" {
+		AppConfig.PostgresConnStr = postgresConn
+		AppConfig.DatabaseType = "postgres"
+		log.Println("PostgreSQL connection string loaded from environment, switching to PostgreSQL")
+	}
+
 	// For now, load defaults. Later, we can load from a file or env vars.
 	// AppConfig = defaultConfig // This line is now redundant due to above assignments
 
@@ -159,6 +169,11 @@ func LoadConfigFromFile(filePath string) (Config, error) {
 	}
 	if AppConfig.ServerAddress != "" {
 		cfg.ServerAddress = AppConfig.ServerAddress
+	}
+	// Preserve PostgreSQL connection string from environment
+	if AppConfig.PostgresConnStr != "" {
+		cfg.PostgresConnStr = AppConfig.PostgresConnStr
+		cfg.DatabaseType = "postgres"
 	}
 
 	// Ensure PSTLocation is loaded after reading from file

@@ -8,18 +8,38 @@ import (
 	"log"
 	"time"
 
+	_ "github.com/lib/pq"           // PostgreSQL driver
 	_ "github.com/mattn/go-sqlite3" // SQLite driver
 )
 
 var dbInstance *sql.DB
 
-// InitDB initializes the database connection using the path from AppConfig
+// InitDB initializes the database connection using the configuration
 // and ensures tables are created.
 func InitDB() (*sql.DB, error) {
 	cfg := config.Get()
 
 	var err error
-	dbInstance, err = sql.Open("sqlite3", cfg.DatabasePath+"?_foreign_keys=on") // Enable foreign key support
+	var driver string
+	var dataSource string
+
+	switch cfg.DatabaseType {
+	case "postgres":
+		if cfg.PostgresConnStr == "" {
+			return nil, fmt.Errorf("PostgreSQL connection string not provided")
+		}
+		driver = "postgres"
+		dataSource = cfg.PostgresConnStr
+		log.Println("Connecting to PostgreSQL database...")
+	case "sqlite":
+		driver = "sqlite3"
+		dataSource = cfg.DatabasePath + "?_foreign_keys=on" // Enable foreign key support
+		log.Printf("Connecting to SQLite database at %s...", cfg.DatabasePath)
+	default:
+		return nil, fmt.Errorf("unsupported database type: %s", cfg.DatabaseType)
+	}
+
+	dbInstance, err = sql.Open(driver, dataSource)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open database: %w", err)
 	}
@@ -28,11 +48,11 @@ func InitDB() (*sql.DB, error) {
 		return nil, fmt.Errorf("failed to ping database: %w", err)
 	}
 
-	if err = createTables(dbInstance); err != nil {
+	if err = createTables(dbInstance, cfg.DatabaseType); err != nil {
 		return nil, fmt.Errorf("failed to create tables: %w", err)
 	}
 
-	log.Println("Database initialized and tables created successfully at", cfg.DatabasePath)
+	log.Printf("Database initialized and tables created successfully using %s", cfg.DatabaseType)
 	return dbInstance, nil
 }
 
@@ -45,25 +65,52 @@ func GetDB() *sql.DB {
 	return dbInstance
 }
 
-func createTables(db *sql.DB) error {
-	ridesTableSQL := `
-	CREATE TABLE IF NOT EXISTS rides (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		name TEXT NOT NULL,
-		start_time DATETIME NOT NULL,
-		end_time DATETIME
-	);`
+func createTables(db *sql.DB, dbType string) error {
+	var ridesTableSQL string
+	var positionsTableSQL string
 
-	positionsTableSQL := `
-	CREATE TABLE IF NOT EXISTS ride_positions (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		ride_id INTEGER NOT NULL,
-		latitude REAL NOT NULL,
-		longitude REAL NOT NULL,
-		speed_knots REAL,
-		timestamp DATETIME NOT NULL,
-		FOREIGN KEY (ride_id) REFERENCES rides(id) ON DELETE CASCADE 
-	);` // Added ON DELETE CASCADE
+	switch dbType {
+	case "postgres":
+		ridesTableSQL = `
+		CREATE TABLE IF NOT EXISTS rides (
+			id SERIAL PRIMARY KEY,
+			name TEXT NOT NULL,
+			start_time TIMESTAMP NOT NULL,
+			end_time TIMESTAMP
+		);`
+
+		positionsTableSQL = `
+		CREATE TABLE IF NOT EXISTS ride_positions (
+			id SERIAL PRIMARY KEY,
+			ride_id INTEGER NOT NULL,
+			latitude REAL NOT NULL,
+			longitude REAL NOT NULL,
+			speed_knots REAL,
+			timestamp TIMESTAMP NOT NULL,
+			FOREIGN KEY (ride_id) REFERENCES rides(id) ON DELETE CASCADE 
+		);`
+	case "sqlite":
+		ridesTableSQL = `
+		CREATE TABLE IF NOT EXISTS rides (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			name TEXT NOT NULL,
+			start_time DATETIME NOT NULL,
+			end_time DATETIME
+		);`
+
+		positionsTableSQL = `
+		CREATE TABLE IF NOT EXISTS ride_positions (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			ride_id INTEGER NOT NULL,
+			latitude REAL NOT NULL,
+			longitude REAL NOT NULL,
+			speed_knots REAL,
+			timestamp DATETIME NOT NULL,
+			FOREIGN KEY (ride_id) REFERENCES rides(id) ON DELETE CASCADE 
+		);` // Added ON DELETE CASCADE
+	default:
+		return fmt.Errorf("unsupported database type: %s", dbType)
+	}
 
 	if _, err := db.Exec(ridesTableSQL); err != nil {
 		return fmt.Errorf("failed to create rides table: %w", err)
