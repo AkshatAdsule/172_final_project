@@ -11,33 +11,64 @@ import (
 )
 
 // NewTLSConfig sets up the TLS configuration for MQTT.
-// It expects certificate files to be in a 'certs' directory relative to the execution path.
-func NewTLSConfig(certPath, keyPath, caPath string) (*tls.Config, error) {
+// It tries to load certs from PEM strings first, then falls back to file paths.
+func NewTLSConfig(caPEM, certPEM, keyPEM, caPath, certPath, keyPath string) (*tls.Config, error) {
 	certpool := x509.NewCertPool()
-	pemCerts, err := os.ReadFile(caPath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read CA certificate: %w", err)
-	}
-	certpool.AppendCertsFromPEM(pemCerts)
 
-	cert, err := tls.LoadX509KeyPair(certPath, keyPath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to load client key pair: %w", err)
+	if caPEM != "" {
+		if !certpool.AppendCertsFromPEM([]byte(caPEM)) {
+			return nil, fmt.Errorf("failed to append CA certificate from PEM string")
+		}
+	} else if caPath != "" {
+		pemCerts, err := os.ReadFile(caPath)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read CA certificate from path %s: %w", caPath, err)
+		}
+		if !certpool.AppendCertsFromPEM(pemCerts) {
+			return nil, fmt.Errorf("failed to append CA certificate from file %s", caPath)
+		}
+	} else {
+		log.Println("Warning: No CA certificate PEM string or file path provided. System CAs will be used if available, or connection may be insecure.")
+		// If no CA is provided, it will use system CAs or might be insecure depending on server/client config.
+		// For some brokers, not providing a RootCA means it won't be explicitly trusted, relying on public CAs.
+	}
+
+	var clientCert tls.Certificate
+	var err error
+
+	if certPEM != "" && keyPEM != "" {
+		clientCert, err = tls.X509KeyPair([]byte(certPEM), []byte(keyPEM))
+		if err != nil {
+			return nil, fmt.Errorf("failed to load client key pair from PEM strings: %w", err)
+		}
+	} else if certPath != "" && keyPath != "" {
+		clientCert, err = tls.LoadX509KeyPair(certPath, keyPath)
+		if err != nil {
+			return nil, fmt.Errorf("failed to load client key pair from paths %s, %s: %w", certPath, keyPath, err)
+		}
+	} else {
+		log.Println("Warning: No client certificate PEMs or file paths provided. Proceeding without client certificate.")
+		// No client certs to add if neither PEMs nor paths are provided
+		return &tls.Config{
+			RootCAs:    certpool,
+			ClientAuth: tls.NoClientCert,
+			ClientCAs:  nil,
+		}, nil
 	}
 
 	return &tls.Config{
 		RootCAs:      certpool,
-		ClientAuth:   tls.NoClientCert,
+		ClientAuth:   tls.NoClientCert, // Assuming server does not require client cert, or client cert is optional
 		ClientCAs:    nil,
-		Certificates: []tls.Certificate{cert},
+		Certificates: []tls.Certificate{clientCert},
 	}, nil
 }
 
 // SubscribeToShadowUpdates connects to the MQTT broker, subscribes to the AWS IoT shadow updates,
 // and returns a channel that will receive message payloads.
 // It also returns a channel for errors and a function to gracefully close the connection.
-func SubscribeToShadowUpdates(brokerURL, clientID, topic, certPath, keyPath, caPath string) (<-chan []byte, <-chan error, func(), error) {
-	tlsConfig, err := NewTLSConfig(certPath, keyPath, caPath)
+func SubscribeToShadowUpdates(brokerURL, clientID, topic string, cfgMqttCertPEM, cfgMqttKeyPEM, cfgMqttRootCAPEM, cfgMqttCertPath, cfgMqttKeyPath, cfgMqttRootCAPath string) (<-chan []byte, <-chan error, func(), error) {
+	tlsConfig, err := NewTLSConfig(cfgMqttRootCAPEM, cfgMqttCertPEM, cfgMqttKeyPEM, cfgMqttRootCAPath, cfgMqttCertPath, cfgMqttKeyPath)
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("failed to create TLS config: %w", err)
 	}

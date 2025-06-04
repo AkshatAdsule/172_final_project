@@ -1,10 +1,14 @@
 package config
 
 import (
+	"encoding/base64"
 	"encoding/json"
+	"log"
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/joho/godotenv"
 )
 
 // Config holds all configuration for the application.
@@ -15,6 +19,9 @@ type Config struct {
 	MQTTCertPath      string         `json:"mqtt_cert_path"`
 	MQTTKeyPath       string         `json:"mqtt_key_path"`
 	MQTTRootCAPath    string         `json:"mqtt_root_ca_path"`
+	MQTTCertPEM       string         `json:"-"`                           // Loaded from env, not json
+	MQTTKeyPEM        string         `json:"-"`                           // Loaded from env, not json
+	MQTTRootCAPEM     string         `json:"-"`                           // Loaded from env, not json
 	DatabasePath      string         `json:"database_path"`               // e.g., "data/rides.db"
 	ServerAddress     string         `json:"server_address"`              // e.g., ":8080"
 	RideStartDistance float64        `json:"ride_start_distance_meters"`  // meters
@@ -55,8 +62,49 @@ var defaultConfig = Config{
 var AppConfig Config
 
 func init() {
-	// For now, load defaults. Later, we can load from a file or env vars.
+	// Load .env file first to make variables available for the rest of init
+	if err := godotenv.Load(); err != nil {
+		log.Println("No .env file found or error loading .env file, relying on manually set environment variables or defaults")
+	}
+
+	// Load defaults first
 	AppConfig = defaultConfig
+
+	// Override with environment variables for PEM content if available
+	if certPEM := os.Getenv("MQTT_CERT_PEM"); certPEM != "" {
+		// decode PEM from base64
+		decodedCertPEM, err := base64.StdEncoding.DecodeString(certPEM)
+		if err != nil {
+			log.Printf("Error decoding MQTT_CERT_PEM: %v", err)
+			AppConfig.MQTTCertPEM = "" // Ensure it's empty on error
+		} else {
+			AppConfig.MQTTCertPEM = string(decodedCertPEM)
+			log.Println("MQTT_CERT_PEM loaded from environment")
+		}
+	}
+	if keyPEM := os.Getenv("MQTT_KEY_PEM"); keyPEM != "" {
+		decodedKeyPEM, err := base64.StdEncoding.DecodeString(keyPEM)
+		if err != nil {
+			log.Printf("Error decoding MQTT_KEY_PEM: %v", err)
+			AppConfig.MQTTKeyPEM = "" // Ensure it's empty on error
+		} else {
+			AppConfig.MQTTKeyPEM = string(decodedKeyPEM)
+			log.Println("MQTT_KEY_PEM loaded from environment")
+		}
+	}
+	if caPEM := os.Getenv("MQTT_ROOTCA_PEM"); caPEM != "" {
+		decodedCaPEM, err := base64.StdEncoding.DecodeString(caPEM)
+		if err != nil {
+			log.Printf("Error decoding MQTT_ROOTCA_PEM: %v", err)
+			AppConfig.MQTTRootCAPEM = "" // Ensure it's empty on error
+		} else {
+			AppConfig.MQTTRootCAPEM = string(decodedCaPEM)
+			log.Println("MQTT_ROOTCA_PEM loaded from environment")
+		}
+	}
+
+	// For now, load defaults. Later, we can load from a file or env vars.
+	// AppConfig = defaultConfig // This line is now redundant due to above assignments
 
 	// Ensure PSTLocation is loaded
 	loc, err := time.LoadLocation(AppConfig.Timezone)
@@ -90,6 +138,18 @@ func LoadConfigFromFile(filePath string) (Config, error) {
 	var cfg Config
 	if err := json.Unmarshal(data, &cfg); err != nil {
 		return Config{}, err
+	}
+
+	// Preserve PEM values loaded from environment if they exist,
+	// as they are not in config.json
+	if AppConfig.MQTTCertPEM != "" {
+		cfg.MQTTCertPEM = AppConfig.MQTTCertPEM
+	}
+	if AppConfig.MQTTKeyPEM != "" {
+		cfg.MQTTKeyPEM = AppConfig.MQTTKeyPEM
+	}
+	if AppConfig.MQTTRootCAPEM != "" {
+		cfg.MQTTRootCAPEM = AppConfig.MQTTRootCAPEM
 	}
 
 	// Ensure PSTLocation is loaded after reading from file
