@@ -9,7 +9,9 @@ export const Route = createFileRoute("/rides")({
 });
 
 function RouteComponent() {
-	const wsUrl = import.meta.env.VITE_WS_URL || "ws://localhost:8080/ws";
+	const wsUrl = import.meta.env.VITE_API_BASE
+		? `ws${import.meta.env.VITE_API_BASE}/ws`
+		: "ws://localhost:8080/ws";
 	const gmapsApiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 
 	return (
