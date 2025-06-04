@@ -116,8 +116,21 @@ func main() {
 	fmt.Println("MQTT Listener and processor started. Press Ctrl+C to stop server.")
 
 	router := gin.Default()
+	router.SetTrustedProxies(nil)
 
-	router.Use(cors.Default())
+	// Configure CORS to only allow specific origins
+	corsConfig := cors.Config{
+		AllowOrigins: []string{
+			"https://b3.aksads.tech",
+			"http://b3.aksads.tech",
+			"http://localhost:5173",
+			"https://localhost:5173",
+		},
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization", "X-Requested-With"},
+		AllowCredentials: true,
+	}
+	router.Use(cors.New(corsConfig))
 
 	// Register API Handlers under /api group
 	apiGroup := router.Group("/api")
