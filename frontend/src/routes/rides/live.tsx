@@ -1,24 +1,46 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { MapComponent } from "../../components/map/MapComponent";
 import { useLatLng } from "../../hooks/useLatLng";
-import { formatSpeedMph } from "../../utils/speed";
+// import { formatSpeedMph } from "../../utils/speed";
 import styles from "./styles/live.module.css";
+import type { LatLng } from "../../types";
 
 export const Route = createFileRoute("/rides/live")({
 	component: RouteComponent,
 });
 
 function RouteComponent() {
-	const { latLngList, currentLocation, rideState } = useLatLng();
+	const { currentLocation, rideState } = useLatLng();
+
+	const latLngList: LatLng[] = rideState.currentRide
+		? rideState.ridePositions.map((p) => ({
+				lat: p.latitude,
+				lng: p.longitude,
+				speed_knots: p.speed_knots,
+			}))
+		: currentLocation
+			? [
+					{
+						lat: currentLocation.latitude,
+						lng: currentLocation.longitude,
+						speed_knots: currentLocation.speed_knots,
+					},
+				]
+			: [];
+
+	const currentPosition = currentLocation
+		? {
+				lat: currentLocation.latitude,
+				lng: currentLocation.longitude,
+			}
+		: undefined;
 
 	return (
 		<div className={styles.liveRoute}>
-			<MapComponent latLngList={latLngList} />
-			{currentLocation && (
+			<MapComponent latLngList={latLngList} currentPosition={currentPosition} />
+			{/* {currentLocation && (
 				<div className={styles.currentInfo}>
 					<h3>Current Location</h3>
-					<div>Lat: {currentLocation.latitude.toFixed(6)}</div>
-					<div>Lng: {currentLocation.longitude.toFixed(6)}</div>
 					{currentLocation.speed_knots && (
 						<div>Speed: {formatSpeedMph(currentLocation.speed_knots)} mph</div>
 					)}
@@ -39,7 +61,7 @@ function RouteComponent() {
 						<div className={styles.ongoing}>🔴 Live</div>
 					)}
 				</div>
-			)}
+			)} */}
 		</div>
 	);
 }

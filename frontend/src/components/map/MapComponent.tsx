@@ -3,6 +3,7 @@ import { useEffect, useState, useCallback } from "react";
 import { Polyline } from "./polyline";
 import { SpeedPolyline } from "./SpeedPolyline";
 import { SpeedLegend } from "./SpeedLegend";
+import { Marker } from "./Marker";
 import type { LatLng } from "../../types";
 import { DARK_STYLE } from "./dark-style";
 
@@ -10,6 +11,7 @@ interface MapComponentProps {
 	latLngList?: LatLng[];
 	defaultCenter?: { lat: number; lng: number };
 	defaultZoom?: number;
+	currentPosition?: { lat: number; lng: number };
 }
 
 // Helper function to check if path has speed data
@@ -21,6 +23,7 @@ export function MapComponent({
 	latLngList = [],
 	defaultCenter = { lat: 37.774929, lng: -122.419418 }, // Default to SF
 	defaultZoom = 19,
+	currentPosition,
 }: MapComponentProps) {
 	const map = useMap();
 	const [speedRange, setSpeedRange] = useState<{
@@ -102,6 +105,19 @@ export function MapComponent({
 					/>
 				) : (
 					<Polyline path={latLngList} strokeColor={"#ffffffde"} />
+				)}
+				{currentPosition && (
+					<Marker
+						position={currentPosition}
+						icon={{
+							path: google.maps.SymbolPath.CIRCLE,
+							scale: 8,
+							fillColor: "#4285f4",
+							fillOpacity: 1,
+							strokeColor: "#ffffff",
+							strokeWeight: 2,
+						}}
+					/>
 				)}
 			</Map>
 			{useSpeedPolyline && speedRange && speedRange.min !== speedRange.max && (

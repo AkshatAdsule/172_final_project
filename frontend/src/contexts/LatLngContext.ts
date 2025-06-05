@@ -1,6 +1,6 @@
 import { createContext } from "react";
 import type { ReadyStateString } from "../hooks/websocket";
-import type { LatLng, Position, RideSummary } from "../types";
+import type { Position, RideSummary } from "../types";
 
 interface RideState {
 	currentRide: RideSummary | null;
