@@ -183,6 +183,22 @@ function Index() {
 					</div>
 				</div>
 			</section>
+
+			<section className={styles.demoSection}>
+				<div className={styles.demoHeader}>
+					<h2>See B3 in Action</h2>
+					<p>
+						Watch a live demo of the B3 system tracking rides and detecting
+						crashes.
+					</p>
+				</div>
+				<div className={styles.demoVideoContainer}>
+					<video controls poster="/poster.png" className={styles.demoVideo}>
+						<source src="/demo_optimized.mp4" type="video/mp4" />
+						Your browser does not support the video tag.
+					</video>
+				</div>
+			</section>
 		</>
 	);
 }
