@@ -234,18 +234,16 @@ func handleMqttMessageProcessing(msgChan <-chan []byte, errChan <-chan error, ri
 					if crashNotifier != nil {
 						// Constructing the message for SNS
 						crashMessage := fmt.Sprintf(
-							"Crash detected for device at %s. Last known location: lat %f, lon %f.",
+							"🚨 CRASH DETECTED 🚨\n\nCrash detected for device at %s.\nLast known location: lat %f, lon %f.\n\nGoogle Maps: https://maps.google.com/?q=%f,%f",
 							time.Now().Format(time.RFC1123),
 							shadowDoc.State.Desired.Latitude,
 							shadowDoc.State.Desired.Longitude,
+							shadowDoc.State.Desired.Latitude,
+							shadowDoc.State.Desired.Longitude,
 						)
-						// Define a unique group ID for FIFO topics, e.g., based on a device ID if available
-						// For now, using a static group ID. A more dynamic ID might be needed.
-						groupID := "crash-alerts"
-						// Deduplication ID can be based on the event's unique properties, like a timestamp or message ID
-						dedupeID := fmt.Sprintf("crash-%d", time.Now().UnixNano())
 
-						err := crashNotifier.PublishFIFO(appCfg.SNSTopicArn, crashMessage, groupID, dedupeID)
+						// Use PublishSimple for standard SNS topics (not FIFO)
+						err := crashNotifier.PublishSimple(appCfg.SNSTopicArn, crashMessage)
 						if err != nil {
 							log.Printf("Failed to publish crash notification to SNS: %v", err)
 						} else {
