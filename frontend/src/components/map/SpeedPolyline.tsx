@@ -7,7 +7,7 @@ import {
 	useRef,
 } from "react";
 
-import { GoogleMapsContext, useMapsLibrary } from "@vis.gl/react-google-maps";
+import { GoogleMapsContext } from "@vis.gl/react-google-maps";
 
 import type { Ref } from "react";
 import type { LatLng } from "../../types";
@@ -51,7 +51,6 @@ function useSpeedPolyline(props: SpeedPolylineProps) {
 		strokeOpacity = 0.8,
 		onSpeedRangeChange,
 	} = props;
-	const geometryLibrary = useMapsLibrary("geometry");
 	const polylinesRef = useRef<google.maps.Polyline[]>([]);
 	const map = useContext(GoogleMapsContext)?.map;
 
@@ -78,8 +77,10 @@ function useSpeedPolyline(props: SpeedPolylineProps) {
 		}
 	}, [minSpeed, maxSpeed, onSpeedRangeChange]);
 
-	// Create polyline segments
-	useMemo(() => {
+	// Create and manage polyline segments
+	useEffect(() => {
+		if (!map) return;
+
 		// Clear existing polylines
 		polylinesRef.current.forEach((polyline) => {
 			polyline.setMap(null);
@@ -109,34 +110,25 @@ function useSpeedPolyline(props: SpeedPolylineProps) {
 				geodesic: true,
 			});
 
+			// Add to map
+			polyline.setMap(map);
 			polylinesRef.current.push(polyline);
 		}
-	}, [path, strokeWeight, strokeOpacity, minSpeed, maxSpeed, geometryLibrary]);
-
-	// Add polylines to map when available
-	useEffect(() => {
-		if (!map) {
-			if (map === undefined)
-				console.error("<SpeedPolyline> has to be inside a Map component.");
-			return;
-		}
-
-		polylinesRef.current.forEach((polyline) => {
-			polyline.setMap(map);
-		});
 
 		return () => {
 			polylinesRef.current.forEach((polyline) => {
 				polyline.setMap(null);
 			});
 		};
-	}, [map]);
+	}, [map, path, strokeWeight, strokeOpacity, minSpeed, maxSpeed]);
 
+	// Cleanup on unmount
 	useEffect(() => {
 		return () => {
 			polylinesRef.current.forEach((polyline) => {
 				polyline.setMap(null);
 			});
+			polylinesRef.current = [];
 		};
 	}, []);
 
@@ -146,10 +138,11 @@ function useSpeedPolyline(props: SpeedPolylineProps) {
 /**
  * Component to render speed-colored polyline segments on a map
  */
-export const SpeedPolyline = forwardRef(
-	(props: SpeedPolylineProps, ref: SpeedPolylineRef) => {
+export const SpeedPolyline = forwardRef<google.maps.Polyline[] | null, SpeedPolylineProps>(
+	(props, ref) => {
 		const polylines = useSpeedPolyline(props);
 
+		// @ts-ignore - polylines can be empty array when Google Maps API is still loading
 		useImperativeHandle(ref, () => polylines, [polylines]);
 
 		return null;

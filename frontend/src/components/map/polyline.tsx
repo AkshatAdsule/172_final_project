@@ -3,11 +3,10 @@ import {
 	useContext,
 	useEffect,
 	useImperativeHandle,
-	useMemo,
 	useRef,
 } from "react";
 
-import { GoogleMapsContext, useMapsLibrary } from "@vis.gl/react-google-maps";
+import { GoogleMapsContext } from "@vis.gl/react-google-maps";
 
 import type { Ref } from "react";
 
@@ -22,51 +21,61 @@ export type PolylineRef = Ref<google.maps.Polyline | null>;
 function usePolyline(props: PolylineProps) {
 	const { path, ...polylineOptions } = props;
 
-	const geometryLibrary = useMapsLibrary("geometry");
-
-	const polyline = useRef(new google.maps.Polyline()).current;
-	// update PolylineOptions (note the dependencies aren't properly checked
-	// here, we just assume that setOptions is smart enough to not waste a
-	// lot of time updating values that didn't change)
-	useMemo(() => {
-		polyline.setOptions(polylineOptions);
-	}, [polyline, polylineOptions]);
-
 	const map = useContext(GoogleMapsContext)?.map;
+	const polylineRef = useRef<google.maps.Polyline | null>(null);
 
-	// update the path with the encodedPath
-	useMemo(() => {
-		polyline.setPath(
-			path.map((point) => new google.maps.LatLng(point.lat, point.lng)),
-		);
-	}, [polyline, path, geometryLibrary]);
-
-	// create polyline instance and add to the map once the map is available
+	// Create polyline instance when both map and geometry library are ready
 	useEffect(() => {
-		if (!map) {
-			if (map === undefined)
-				console.error("<Polyline> has to be inside a Map component.");
-
-			return;
+		if (!map) return;
+		
+		// Create the polyline instance if it doesn't exist
+		if (!polylineRef.current) {
+			polylineRef.current = new google.maps.Polyline();
 		}
 
-		polyline.setMap(map);
+		// Set the polyline options
+		polylineRef.current.setOptions(polylineOptions);
+
+		// Add to map
+		polylineRef.current.setMap(map);
 
 		return () => {
-			polyline.setMap(null);
+			if (polylineRef.current) {
+				polylineRef.current.setMap(null);
+			}
 		};
-	}, [map]);
+	}, [map, polylineOptions]);
 
-	return polyline;
+	// Update the path when it changes
+	useEffect(() => {
+		if (polylineRef.current && path.length > 0) {
+			polylineRef.current.setPath(
+				path.map((point) => new google.maps.LatLng(point.lat, point.lng)),
+			);
+		}
+	}, [path]);
+
+	// Cleanup on unmount
+	useEffect(() => {
+		return () => {
+			if (polylineRef.current) {
+				polylineRef.current.setMap(null);
+				polylineRef.current = null;
+			}
+		};
+	}, []);
+
+	return polylineRef.current;
 }
 
 /**
  * Component to render a polyline on a map
  */
-export const Polyline = forwardRef((props: PolylineProps, ref: PolylineRef) => {
+export const Polyline = forwardRef<google.maps.Polyline | null, PolylineProps>((props, ref) => {
 	const polyline = usePolyline(props);
 
-	useImperativeHandle(ref, () => polyline, []);
+	// @ts-ignore - polyline can be null when Google Maps API is still loading
+	useImperativeHandle(ref, () => polyline, [polyline]);
 
 	return null;
 });
