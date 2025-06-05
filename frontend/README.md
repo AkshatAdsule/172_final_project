@@ -23,10 +23,10 @@ A React-based frontend application for tracking and visualizing GPS rides. This 
 
 The frontend handles these WebSocket message types from the backend:
 
-- `current_location`: Live GPS position updates
-- `ride_started`: Notification when a new ride begins
-- `ride_position_added`: New GPS point added to current ride
-- `ride_ended`: Notification when a ride concludes
+- `current_location`: Sent on every valid GPS update.
+- `ride_started`: A new ride has begun.
+- `ride_position_added`: New GPS point added to current ride.
+- `ride_ended`: The current ride has ended.
 
 ### API Endpoints
 

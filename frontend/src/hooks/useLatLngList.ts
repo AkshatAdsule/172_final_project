@@ -1,24 +1,22 @@
 import { useEffect, useState } from "react";
 import type {
-	LatLng,
 	Position,
 	WebSocketMessage,
 	CurrentLocationMessage,
 	RideStartedMessage,
-	RidePositionAddedMessage,
+	RidePositionUpdateMessage,
 	RideEndedMessage,
 	RideSummary,
 } from "../types";
-import { useWebSocket } from "./websocket";
+import { useWS } from "./useWS";
 
 interface RideState {
 	currentRide: RideSummary | null;
 	ridePositions: Position[];
 }
 
-export function useLatLngList(url: string) {
-	const { lastMessage, readyState, sendMessage } = useWebSocket(url);
-	const [latLngList, setLatLngList] = useState<LatLng[]>([]);
+export function useLatLngList() {
+	const { lastMessage, readyState, sendMessage } = useWS();
 	const [currentLocation, setCurrentLocation] = useState<Position | null>(null);
 	const [rideState, setRideState] = useState<RideState>({
 		currentRide: null,
@@ -34,52 +32,29 @@ export function useLatLngList(url: string) {
 					case "current_location": {
 						const locationMsg = message as CurrentLocationMessage;
 						const position: Position = {
-							latitude: locationMsg.payload.latitude,
-							longitude: locationMsg.payload.longitude,
-							timestamp: locationMsg.payload.timestamp,
-							speed_knots: locationMsg.payload.speed_knots,
+							...locationMsg.payload,
 						};
-
 						setCurrentLocation(position);
-
-						// Add to latLngList with speed data
-						setLatLngList((prevList) => [
-							...prevList,
-							{
-								lat: position.latitude,
-								lng: position.longitude,
-								speed_knots: position.speed_knots,
-							},
-						]);
 						break;
 					}
 
-					case "ride_started": {
+					case "RIDE_STARTED": {
 						const rideMsg = message as RideStartedMessage;
 						const newRide: RideSummary = {
 							id: rideMsg.payload.ride_id,
-							name: rideMsg.payload.name,
-							start_time: rideMsg.payload.start_time,
+							name: rideMsg.payload.ride_name,
+							start_time: rideMsg.payload.timestamp,
 						};
 
 						setRideState({
 							currentRide: newRide,
-							ridePositions: [rideMsg.payload.initial_position],
+							ridePositions: [rideMsg.payload.position],
 						});
-
-						// Clear previous live tracking data for new ride
-						setLatLngList([
-							{
-								lat: rideMsg.payload.initial_position.latitude,
-								lng: rideMsg.payload.initial_position.longitude,
-								speed_knots: rideMsg.payload.initial_position.speed_knots,
-							},
-						]);
 						break;
 					}
 
-					case "ride_position_added": {
-						const positionMsg = message as RidePositionAddedMessage;
+					case "RIDE_POSITION_UPDATE": {
+						const positionMsg = message as RidePositionUpdateMessage;
 						setRideState((prev) => ({
 							...prev,
 							ridePositions: [
@@ -90,37 +65,25 @@ export function useLatLngList(url: string) {
 						break;
 					}
 
-					case "ride_ended": {
+					case "RIDE_ENDED": {
 						const endMsg = message as RideEndedMessage;
 						setRideState((prev) => ({
 							...prev,
 							currentRide: prev.currentRide
 								? {
 										...prev.currentRide,
-										end_time: endMsg.payload.end_time,
+										end_time: endMsg.payload.timestamp,
 									}
 								: null,
 						}));
 						break;
 					}
-
-					default:
-						// Fallback for old message format (backward compatibility)
-						const data = message as any;
-						if (
-							typeof data.latitude === "number" &&
-							typeof data.longitude === "number"
-						) {
-							setLatLngList((prevList) => [
-								...prevList,
-								{ lat: data.latitude, lng: data.longitude },
-							]);
-						} else {
-							console.warn(
-								"[useLatLngList] Received unknown message type:",
-								message,
-							);
-						}
+					default: {
+						console.warn(
+							"[useLatLngList] Received unknown message type:",
+							message.type,
+						);
+					}
 				}
 			} catch (error) {
 				console.error("[useLatLngList] Error parsing message:", error);
@@ -129,7 +92,6 @@ export function useLatLngList(url: string) {
 	}, [lastMessage]);
 
 	return {
-		latLngList,
 		readyState,
 		sendMessage,
 		currentLocation,

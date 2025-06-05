@@ -8,7 +8,6 @@ interface RideState {
 }
 
 export interface LatLngContextType {
-	latLngList: LatLng[];
 	readyState: ReadyStateString;
 	sendMessage: (
 		data: string | ArrayBufferLike | Blob | ArrayBufferView,

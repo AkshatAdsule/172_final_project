@@ -30,10 +30,11 @@ export interface RideDetail {
 export interface WebSocketMessage {
 	type:
 		| "current_location"
-		| "ride_started"
-		| "ride_position_added"
-		| "ride_ended";
+		| "RIDE_STARTED"
+		| "RIDE_POSITION_UPDATE"
+		| "RIDE_ENDED";
 	payload: any;
+	timestamp: string;
 }
 
 export interface CurrentLocationMessage extends WebSocketMessage {
@@ -47,27 +48,28 @@ export interface CurrentLocationMessage extends WebSocketMessage {
 }
 
 export interface RideStartedMessage extends WebSocketMessage {
-	type: "ride_started";
+	type: "RIDE_STARTED";
 	payload: {
 		ride_id: number;
-		name: string;
-		start_time: string;
-		initial_position: Position;
+		ride_name: string;
+		timestamp: string;
+		position: Position;
 	};
 }
 
-export interface RidePositionAddedMessage extends WebSocketMessage {
-	type: "ride_position_added";
+export interface RidePositionUpdateMessage extends WebSocketMessage {
+	type: "RIDE_POSITION_UPDATE";
 	payload: {
 		ride_id: number;
+		timestamp: string;
 		position: Position;
 	};
 }
 
 export interface RideEndedMessage extends WebSocketMessage {
-	type: "ride_ended";
+	type: "RIDE_ENDED";
 	payload: {
 		ride_id: number;
-		end_time: string;
+		timestamp: string;
 	};
 }
