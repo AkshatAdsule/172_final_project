@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"log"
 	"net/http"
@@ -24,6 +25,8 @@ import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
+
+var testMode = flag.Bool("testmode", false, "Enable test mode to mock MQTT and manually send updates")
 
 // Moved the correct ShadowStateDesired struct definition here
 type ShadowStateDesired struct {
@@ -50,31 +53,35 @@ type ShadowDocument struct {
 }
 
 func main() {
-	// Load configuration from file if it exists, otherwise use defaults
-	appConfig := config.Get()
-	if _, err := os.Stat("config.json"); err == nil {
-		loadedConfig, err := config.LoadConfigFromFile("config.json")
-		if err != nil {
-			log.Printf("Warning: Failed to load config.json, using defaults: %v", err)
-		} else {
-			appConfig = loadedConfig
-			config.SetConfig(appConfig) // Update global config
-			log.Println("Configuration loaded from config.json")
-		}
+	flag.Parse()
+
+	// Load configuration from file first
+	appConfig, err := config.LoadConfigFromFile("config.json")
+	if err != nil {
+		log.Printf("Warning: Failed to load config.json, using default configuration: %v", err)
+		appConfig = config.AppConfig // Fallback to defaults
 	} else {
-		log.Println("config.json not found, using default configuration")
+		config.AppConfig = appConfig // Set global AppConfig
 	}
 
-	db, err := database.InitDB()
+	// Override test mode from flag
+	if *testMode {
+		appConfig.TestMode = true
+		log.Println("Test mode enabled via command-line flag.")
+	}
+
+	// Initialize database
+	db, err := database.NewStore(appConfig.PostgresConnStr)
 	if err != nil {
 		log.Fatalf("Failed to initialize database: %v", err)
 	}
-	defer database.CloseDB()
+	defer db.Close()
 
+	// Setup WebSocket Hub
 	wsHub := ws.NewHub()
 	go wsHub.Run()
-	log.Println("WebSocket Hub initialized and running.")
 
+	// Initialize RideManager
 	rideManager := ride.NewRideManager(db, appConfig, wsHub)
 	inactivityCheckInterval := time.Duration(appConfig.RideEndStaticSecs) * time.Second
 	if inactivityCheckInterval <= 0 {
@@ -83,33 +90,40 @@ func main() {
 	go rideManager.CheckInactivityLoop(inactivityCheckInterval)
 	log.Println("RideManager initialized and inactivity checker started.")
 
-	// Initialize SNS notifier for crash detection
+	// Initialize Notifier only if SNS is enabled in config
 	var crashNotifier *snsnotifier.Notifier
-	if appConfig.SNSEnabled && appConfig.SNSTopicArn != "" {
-		ctx := context.Background()
+	if appConfig.SNSEnabled {
 		var err error
-		crashNotifier, err = snsnotifier.NewNotifier(ctx)
+		crashNotifier, err = snsnotifier.NewNotifier(context.Background())
 		if err != nil {
-			log.Printf("Warning: Failed to initialize SNS crash notifier: %v", err)
-			crashNotifier = nil
-		} else {
-			log.Println("SNS crash notifier initialized successfully")
+			log.Printf("Failed to initialize SNS Notifier: %v. Continuing without crash notifications.", err)
+			crashNotifier = nil // Ensure notifier is nil on failure
 		}
 	}
 
-	msgChan, errChan, closeFn, err := mqttsubscriber.SubscribeToShadowUpdates(
-		appConfig.MQTTBrokerURL,
-		appConfig.MQTTClientID,
-		appConfig.MQTTTopic,
-		appConfig.MQTTCertPEM,    // PEM content
-		appConfig.MQTTKeyPEM,     // PEM content
-		appConfig.MQTTRootCAPEM,  // PEM content
-		appConfig.MQTTCertPath,   // Fallback path
-		appConfig.MQTTKeyPath,    // Fallback path
-		appConfig.MQTTRootCAPath, // Fallback path
-	)
-	if err != nil {
-		log.Fatalf("Failed to subscribe to shadow updates: %v", err)
+	var msgChan <-chan []byte
+	var errChan <-chan error
+	var closeFn func()
+
+	if appConfig.TestMode {
+		log.Println("Running in test mode. MQTT subscriber is mocked.")
+		msgChan, errChan, closeFn = mqttsubscriber.SubscribeToShadowUpdatesMock()
+	} else {
+		var err error
+		msgChan, errChan, closeFn, err = mqttsubscriber.SubscribeToShadowUpdates(
+			appConfig.MQTTBrokerURL,
+			appConfig.MQTTClientID,
+			appConfig.MQTTTopic,
+			appConfig.MQTTCertPEM,
+			appConfig.MQTTKeyPEM,
+			appConfig.MQTTRootCAPEM,
+			appConfig.MQTTCertPath,
+			appConfig.MQTTKeyPath,
+			appConfig.MQTTRootCAPath,
+		)
+		if err != nil {
+			log.Fatalf("Failed to subscribe to shadow updates: %v", err)
+		}
 	}
 
 	go handleMqttMessageProcessing(msgChan, errChan, rideManager, appConfig, crashNotifier)
@@ -118,7 +132,7 @@ func main() {
 	router := gin.Default()
 	router.SetTrustedProxies(nil)
 
-	// Configure CORS to only allow specific origins
+	// Configure CORS
 	corsConfig := cors.Config{
 		AllowOrigins: []string{
 			"https://b3.aksads.tech",
@@ -132,9 +146,42 @@ func main() {
 	}
 	router.Use(cors.New(corsConfig))
 
-	// Register API Handlers under /api group
+	// Register API Handlers
 	apiGroup := router.Group("/api")
 	api.RegisterRideHandlers(apiGroup, db)
+
+	// Add test-only endpoints if in test mode
+	if appConfig.TestMode {
+		testGroup := router.Group("/api/test")
+		{
+			testGroup.POST("/location_update", func(ctx *gin.Context) {
+				var shadowDoc ShadowDocument
+				if err := ctx.ShouldBindJSON(&shadowDoc); err != nil {
+					ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+					return
+				}
+
+				if shadowDoc.State.Desired.Timestamp == "" {
+					ctx.JSON(http.StatusBadRequest, gin.H{"error": "state.desired.timestamp is required"})
+					return
+				}
+
+				payload, err := json.Marshal(shadowDoc)
+				if err != nil {
+					ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to marshal shadow document"})
+					return
+				}
+
+				err = mqttsubscriber.PublishMockMessage(payload)
+				if err != nil {
+					ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+					return
+				}
+
+				ctx.JSON(http.StatusOK, gin.H{"message": "Location update sent to mock channel"})
+			})
+		}
+	}
 
 	router.GET("/ping", func(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, gin.H{"message": "pong"})
@@ -184,54 +231,30 @@ func handleMqttMessageProcessing(msgChan <-chan []byte, errChan <-chan error, ri
 
 				// Check for crash detection
 				if shadowDoc.State.Desired.Status == "CRASH_DETECTED" {
-					log.Printf("CRASH DETECTED! Sending emergency notification...")
-					if crashNotifier != nil && appCfg.SNSEnabled {
-						// Get the crash time in PST
-						crashTime := time.Unix(shadowDoc.Timestamp, 0).In(appCfg.PSTLocation)
-						timeStr := crashTime.Format("Monday, January 2, 2006 at 3:04 PM MST")
+					if crashNotifier != nil {
+						// Constructing the message for SNS
+						crashMessage := fmt.Sprintf(
+							"Crash detected for device at %s. Last known location: lat %f, lon %f.",
+							time.Now().Format(time.RFC1123),
+							shadowDoc.State.Desired.Latitude,
+							shadowDoc.State.Desired.Longitude,
+						)
+						// Define a unique group ID for FIFO topics, e.g., based on a device ID if available
+						// For now, using a static group ID. A more dynamic ID might be needed.
+						groupID := "crash-alerts"
+						// Deduplication ID can be based on the event's unique properties, like a timestamp or message ID
+						dedupeID := fmt.Sprintf("crash-%d", time.Now().UnixNano())
 
-						// Get location coordinates
-						latitude := shadowDoc.State.Desired.Latitude
-						longitude := shadowDoc.State.Desired.Longitude
-
-						// Create detailed emergency message
-						subject := "🚨 EMERGENCY ALERT - Crash Detected on Ivan's Bike Ride"
-						message := fmt.Sprintf(`EMERGENCY: A crash has been detected on Ivan's bike ride.
-
-📍 LOCATION: %f, %f
-🕐 TIME: %s
-⚠️  STATUS: Crash detection sensor triggered
-
-This is an automated alert from the bike tracking system. Please check on Ivan immediately and contact emergency services if needed.
-
-Google Maps link: https://maps.google.com/?q=%f,%f
-
-If this is a false alarm, please disregard this message.`,
-							latitude, longitude, timeStr, latitude, longitude)
-
-						crashMessage := snsnotifier.NotificationMessage{
-							TopicArn: appCfg.SNSTopicArn,
-							Subject:  subject,
-							Message:  message,
-							Attributes: map[string]string{
-								"event_type": "crash_detected",
-								"priority":   "critical",
-								"latitude":   fmt.Sprintf("%f", latitude),
-								"longitude":  fmt.Sprintf("%f", longitude),
-								"timestamp":  crashTime.Format(time.RFC3339),
-								"rider_name": "Ivan",
-							},
-						}
-
-						err := crashNotifier.PublishMessage(crashMessage)
+						err := crashNotifier.PublishFIFO(appCfg.SNSTopicArn, crashMessage, groupID, dedupeID)
 						if err != nil {
-							log.Printf("Failed to send crash notification: %v", err)
+							log.Printf("Failed to publish crash notification to SNS: %v", err)
 						} else {
-							log.Printf("Emergency crash notification sent successfully! Location: %f, %f at %s",
-								latitude, longitude, timeStr)
+							log.Println("Successfully published crash notification to SNS.")
 						}
+					} else {
+						log.Println("Crash detected, but SNS notifier is not enabled.")
 					}
-					// Continue processing the message for GPS data even after crash detection
+					continue // Don't process this as a regular GPS point for ride tracking
 				}
 
 				if shadowDoc.State.Desired.Timestamp == "" || !shadowDoc.State.Desired.ValidFix {

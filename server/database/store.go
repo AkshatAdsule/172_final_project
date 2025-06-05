@@ -1,7 +1,6 @@
 package database
 
 import (
-	"b3/server/config" // To get DB path and other configs
 	"b3/server/models" // Adjust import path if your module path is different
 	"database/sql"
 	"fmt"
@@ -12,17 +11,13 @@ import (
 	_ "github.com/lib/pq" // PostgreSQL driver
 )
 
-var dbInstance *sql.DB
-
-// InitDB initializes the PostgreSQL database connection and ensures tables are created.
-func InitDB() (*sql.DB, error) {
-	cfg := config.Get()
-
-	if cfg.PostgresConnStr == "" {
+// NewStore initializes the PostgreSQL database connection and ensures tables are created.
+func NewStore(postgresConnStr string) (*sql.DB, error) {
+	if postgresConnStr == "" {
 		return nil, fmt.Errorf("PostgreSQL connection string not provided. Please set POSTGRES_CONNECTION_STRING environment variable")
 	}
 
-	connStr := cfg.PostgresConnStr
+	connStr := postgresConnStr
 	// Add binary_parameters=yes to enable binary encoding of parameters [pg bouncer race condition fix]
 	if !containsBinaryParams(connStr) {
 		separator := "&"
@@ -33,26 +28,26 @@ func InitDB() (*sql.DB, error) {
 	}
 
 	var err error
-	dbInstance, err = sql.Open("postgres", connStr)
+	db, err := sql.Open("postgres", connStr)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open PostgreSQL database: %w", err)
 	}
 
 	// Configure connection pool to prevent prepared statement conflicts
-	dbInstance.SetMaxOpenConns(25)                 // Maximum number of open connections
-	dbInstance.SetMaxIdleConns(5)                  // Maximum number of idle connections
-	dbInstance.SetConnMaxLifetime(5 * time.Minute) // Maximum connection lifetime
+	db.SetMaxOpenConns(25)                 // Maximum number of open connections
+	db.SetMaxIdleConns(5)                  // Maximum number of idle connections
+	db.SetConnMaxLifetime(5 * time.Minute) // Maximum connection lifetime
 
-	if err = dbInstance.Ping(); err != nil {
+	if err = db.Ping(); err != nil {
 		return nil, fmt.Errorf("failed to ping PostgreSQL database: %w", err)
 	}
 
-	if err = createTables(dbInstance); err != nil {
+	if err = createTables(db); err != nil {
 		return nil, fmt.Errorf("failed to create tables: %w", err)
 	}
 
 	log.Println("PostgreSQL database initialized and tables created successfully")
-	return dbInstance, nil
+	return db, nil
 }
 
 // Helper function to check if connection string contains query parameters
@@ -63,15 +58,6 @@ func containsParams(connStr string) bool {
 // Helper function to check if the connection string contains binary_parameters=no
 func containsBinaryParams(connStr string) bool {
 	return strings.Contains(connStr, "binary_parameters=no")
-}
-
-// GetDB returns the current database instance.
-// Panics if InitDB has not been called successfully.
-func GetDB() *sql.DB {
-	if dbInstance == nil {
-		log.Fatal("Database has not been initialized. Call InitDB first.")
-	}
-	return dbInstance
 }
 
 func createTables(db *sql.DB) error {
@@ -272,16 +258,4 @@ func GetAllRidesSummaryWithPagination(db *sql.DB, page, limit int, dateFilter *t
 		return nil, fmt.Errorf("error during rows iteration for paginated rides summary: %w", err)
 	}
 	return rides, nil
-}
-
-// CloseDB closes the database connection.
-func CloseDB() {
-	if dbInstance != nil {
-		err := dbInstance.Close()
-		if err != nil {
-			log.Printf("Error closing database: %v", err)
-		} else {
-			log.Println("Database connection closed.")
-		}
-	}
 }

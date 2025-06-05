@@ -34,6 +34,7 @@ type Config struct {
 	SNSTopicArn string `json:"sns_topic_arn,omitempty"` // Default SNS topic ARN for notifications
 	SNSRegion   string `json:"sns_region,omitempty"`    // AWS region for SNS (optional, uses default AWS config if empty)
 	SNSEnabled  bool   `json:"sns_enabled"`             // Whether SNS notifications are enabled
+	TestMode    bool   `json:"test_mode"`               // Whether to run in test mode with mock MQTT
 }
 
 var defaultConfig = Config{
@@ -54,6 +55,7 @@ var defaultConfig = Config{
 	SNSTopicArn: "",    // To be set via config file or environment variable
 	SNSRegion:   "",    // Uses default AWS config region if empty
 	SNSEnabled:  false, // Disabled by default
+	TestMode:    false, // Disabled by default
 }
 
 // AppConfig is the global configuration instance.

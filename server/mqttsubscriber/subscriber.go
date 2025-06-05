@@ -11,6 +11,11 @@ import (
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 )
 
+var (
+	// mockMQTTChannel is used in test mode to simulate receiving MQTT messages.
+	mockMQTTChannel chan []byte
+)
+
 // NewTLSConfig sets up the TLS configuration for MQTT.
 // It tries to load certs from PEM strings first, then falls back to file paths.
 func NewTLSConfig(caPEM, certPEM, keyPEM, caPath, certPath, keyPath string) (*tls.Config, error) {
@@ -123,4 +128,39 @@ func SubscribeToShadowUpdates(brokerURL, clientID, topic string, cfgMqttCertPEM,
 	}
 
 	return messageChan, errorChan, closeFn, nil
+}
+
+// SubscribeToShadowUpdatesMock creates a mock subscription for testing purposes.
+// It returns a channel for messages, a channel for errors, and a close function.
+func SubscribeToShadowUpdatesMock() (<-chan []byte, <-chan error, func()) {
+	// Initialize the mock channel if it hasn't been already.
+	if mockMQTTChannel == nil {
+		mockMQTTChannel = make(chan []byte, 10) // Buffered channel
+	}
+
+	errChan := make(chan error, 1)
+
+	closeFn := func() {
+		log.Println("Closing mock MQTT subscriber.")
+		close(mockMQTTChannel)
+		close(errChan)
+	}
+
+	return mockMQTTChannel, errChan, closeFn
+}
+
+// PublishMockMessage sends a message to the mock MQTT channel.
+// This is to be called by test harnesses or manual-testing endpoints.
+func PublishMockMessage(payload []byte) error {
+	if mockMQTTChannel == nil {
+		return fmt.Errorf("mock MQTT channel is not initialized")
+	}
+
+	select {
+	case mockMQTTChannel <- payload:
+		log.Printf("Published mock message to channel: %s", string(payload))
+		return nil
+	default:
+		return fmt.Errorf("mock MQTT channel is full")
+	}
 }
