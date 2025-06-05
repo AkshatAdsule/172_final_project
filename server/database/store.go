@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	_ "github.com/lib/pq" // PostgreSQL driver
@@ -21,11 +22,26 @@ func InitDB() (*sql.DB, error) {
 		return nil, fmt.Errorf("PostgreSQL connection string not provided. Please set POSTGRES_CONNECTION_STRING environment variable")
 	}
 
+	connStr := cfg.PostgresConnStr
+	// Add binary_parameters=yes to enable binary encoding of parameters [pg bouncer race condition fix]
+	if !containsBinaryParams(connStr) {
+		separator := "&"
+		if !containsParams(connStr) {
+			separator = "?"
+		}
+		connStr += separator + "binary_parameters=yes"
+	}
+
 	var err error
-	dbInstance, err = sql.Open("postgres", cfg.PostgresConnStr)
+	dbInstance, err = sql.Open("postgres", connStr)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open PostgreSQL database: %w", err)
 	}
+
+	// Configure connection pool to prevent prepared statement conflicts
+	dbInstance.SetMaxOpenConns(25)                 // Maximum number of open connections
+	dbInstance.SetMaxIdleConns(5)                  // Maximum number of idle connections
+	dbInstance.SetConnMaxLifetime(5 * time.Minute) // Maximum connection lifetime
 
 	if err = dbInstance.Ping(); err != nil {
 		return nil, fmt.Errorf("failed to ping PostgreSQL database: %w", err)
@@ -37,6 +53,16 @@ func InitDB() (*sql.DB, error) {
 
 	log.Println("PostgreSQL database initialized and tables created successfully")
 	return dbInstance, nil
+}
+
+// Helper function to check if connection string contains query parameters
+func containsParams(connStr string) bool {
+	return strings.Contains(connStr, "?")
+}
+
+// Helper function to check if the connection string contains binary_parameters=no
+func containsBinaryParams(connStr string) bool {
+	return strings.Contains(connStr, "binary_parameters=no")
 }
 
 // GetDB returns the current database instance.
@@ -117,8 +143,9 @@ func GetRideDetails(db *sql.DB, rideID int64) (*models.RideDetail, error) {
 	ride := &models.RideDetail{}
 	var endTime sql.NullTime // Handle NULL end_time
 
-	query := "SELECT id, name, start_time, end_time FROM rides WHERE id = $1"
-	row := db.QueryRow(query, rideID)
+	// First query: Get ride details
+	rideQuery := "SELECT id, name, start_time, end_time FROM rides WHERE id = $1"
+	row := db.QueryRow(rideQuery, rideID)
 	if err := row.Scan(&ride.ID, &ride.Name, &ride.StartTime, &endTime); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, fmt.Errorf("ride with ID %d not found", rideID)
@@ -129,10 +156,14 @@ func GetRideDetails(db *sql.DB, rideID int64) (*models.RideDetail, error) {
 		ride.EndTime = endTime.Time
 	}
 
-	query = "SELECT latitude, longitude, speed_knots, timestamp FROM ride_positions WHERE ride_id = $1 ORDER BY timestamp ASC"
-	rows, err := db.Query(query, rideID)
+	// Second query: Get ride positions with a different variable name
+	positionsQuery := "SELECT latitude, longitude, speed_knots, timestamp FROM ride_positions WHERE ride_id = $1 ORDER BY timestamp ASC"
+	log.Printf("Positions Query: %s", positionsQuery)
+	log.Printf("RideID: %d", rideID)
+
+	rows, err := db.Query(positionsQuery, rideID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to query ride positions: %w", err)
+		return nil, fmt.Errorf("failed to query ride positions for ride_id %d: %w", rideID, err)
 	}
 	defer rows.Close()
 
@@ -160,6 +191,7 @@ func GetRideDetails(db *sql.DB, rideID int64) (*models.RideDetail, error) {
 		ride.Positions[i].Timestamp = ride.Positions[i].Timestamp.UTC()
 	}
 
+	log.Printf("Successfully retrieved ride %d with %d positions", rideID, len(ride.Positions))
 	return ride, nil
 }
 
