@@ -1,5 +1,7 @@
 # B³ Ride Tracking Frontend
 
+> ℹ️ For overall project instructions, see the [root README](../README.md)
+
 A React-based frontend application for tracking and visualizing GPS rides. This application connects to a backend service that processes MQTT GPS updates and provides real-time ride tracking with historical data.
 
 ## Features
@@ -39,7 +41,7 @@ The frontend handles these WebSocket message types from the backend:
 
 - Node.js 18+ or Bun
 - Google Maps API key
-- Backend service running (see planning.md for backend setup)
+- Backend service running
 
 ### Environment Variables
 
@@ -54,21 +56,15 @@ VITE_API_BASE_URL=http://localhost:8080/api
 
 ```bash
 # Install dependencies
-npm install
-# or
 bun install
 
 # Start development server
-npm run dev
-# or
 bun dev
 ```
 
 ### Build for Production
 
 ```bash
-npm run build
-# or
 bun run build
 ```
 

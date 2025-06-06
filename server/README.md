@@ -1,5 +1,7 @@
 # Real-Time GPS Ride Tracking Backend
 
+> ℹ️ For overall project instructions, see the [root README](../README.md)
+
 This Go-based server processes GPS updates from MQTT, tracks rides, stores them in an SQLite database, and exposes ride data via a RESTful API and live WebSocket events.
 
 ## 1. Overview
@@ -80,7 +82,12 @@ The server components:
     go mod tidy
     ```
 
-3.  **Crucial:** Set up your `certs/` directory if using TLS for MQTT (e.g., for AWS IoT):
+3.  Build the server binary:
+    ```bash
+    go build -o server main.go
+    ```
+
+4.  **Crucial:** Set up your `certs/` directory if using TLS for MQTT (e.g., for AWS IoT):
     - `certificate.pem.crt` - Client/Device certificate
     - `private.pem.key` - Client/Device private key
     - `AmazonRootCA1.pem` (or your broker's CA) - Root CA certificate
@@ -128,6 +135,8 @@ Create a `config.json` file in the root of the `server` directory. This file con
 2.  Run the server:
     ```bash
     go run main.go
+    # Or start using the built binary:
+    ./server
     ```
 
 The server will:
@@ -299,7 +308,6 @@ server/
 ├── go.mod                  # Go module dependencies
 ├── go.sum                  # Go module checksums
 ├── README.md               # This file
-├── PLANNING.md             # Planning document for the overhaul
 ├── config.json             # **User-created** configuration file
 ├── api/                    # API layer
 │   └── handlers.go         # Gin handlers for REST API endpoints
@@ -346,7 +354,3 @@ server/
 - **Certificate Errors (MQTT):** Verify paths in `config.json` are correct and certificates are valid.
 - **Database Issues:** Check permissions for the `data_dir` and `database_path` specified in `config.json`.
 - **"No desired state" logs:** Your MQTT messages might not have the `state.desired.valid_fix: true` or `state.desired.timestamp` fields, or the `state.desired` object itself might be missing. Check the structure of your MQTT messages.
-
-## 12. License
-
-This project is part of a school final project (Course 172).
