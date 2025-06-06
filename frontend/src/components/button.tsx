@@ -41,4 +41,4 @@ function Button({
 	return <Comp data-slot="button" className={buttonClassName} {...props} />;
 }
 
-export { Button }; 
+export { Button };

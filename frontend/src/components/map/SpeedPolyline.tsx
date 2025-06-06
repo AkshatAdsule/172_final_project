@@ -138,13 +138,14 @@ function useSpeedPolyline(props: SpeedPolylineProps) {
 /**
  * Component to render speed-colored polyline segments on a map
  */
-export const SpeedPolyline = forwardRef<google.maps.Polyline[] | null, SpeedPolylineProps>(
-	(props, ref) => {
-		const polylines = useSpeedPolyline(props);
+export const SpeedPolyline = forwardRef<
+	google.maps.Polyline[] | null,
+	SpeedPolylineProps
+>((props, ref) => {
+	const polylines = useSpeedPolyline(props);
 
-		// @ts-ignore - polylines can be empty array when Google Maps API is still loading
-		useImperativeHandle(ref, () => polylines, [polylines]);
+	// @ts-ignore - polylines can be empty array when Google Maps API is still loading
+	useImperativeHandle(ref, () => polylines, [polylines]);
 
-		return null;
-	},
-);
+	return null;
+});

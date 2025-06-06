@@ -396,7 +396,7 @@
 }
 
 /* DEMO VIDEO SECTION */
-	.demoSection {
+.demoSection {
 	padding: var(--spacing-xl) var(--spacing-xl) calc(var(--spacing-xl) * 2);
 	background-color: var(--background-color);
 	color: var(--text-color);

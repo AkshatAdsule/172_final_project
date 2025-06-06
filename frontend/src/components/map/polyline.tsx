@@ -27,7 +27,7 @@ function usePolyline(props: PolylineProps) {
 	// Create polyline instance when both map and geometry library are ready
 	useEffect(() => {
 		if (!map) return;
-		
+
 		// Create the polyline instance if it doesn't exist
 		if (!polylineRef.current) {
 			polylineRef.current = new google.maps.Polyline();
@@ -71,11 +71,13 @@ function usePolyline(props: PolylineProps) {
 /**
  * Component to render a polyline on a map
  */
-export const Polyline = forwardRef<google.maps.Polyline | null, PolylineProps>((props, ref) => {
-	const polyline = usePolyline(props);
+export const Polyline = forwardRef<google.maps.Polyline | null, PolylineProps>(
+	(props, ref) => {
+		const polyline = usePolyline(props);
 
-	// @ts-ignore - polyline can be null when Google Maps API is still loading
-	useImperativeHandle(ref, () => polyline, [polyline]);
+		// @ts-ignore - polyline can be null when Google Maps API is still loading
+		useImperativeHandle(ref, () => polyline, [polyline]);
 
-	return null;
-});
+		return null;
+	},
+);

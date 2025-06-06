@@ -3,7 +3,6 @@ import { useEffect, useState } from "react";
 import { MapComponent } from "../../components/map/MapComponent";
 import { useLatLng } from "../../hooks/useLatLng";
 import { ApiService } from "../../services/api";
-// import { formatSpeedMph } from "../../utils/speed";
 import type { LatLng, Position, RideDetail } from "../../types";
 import styles from "./styles/live.module.css";
 
@@ -120,30 +119,6 @@ function RouteComponent() {
 	return (
 		<div className={styles.liveRoute}>
 			<MapComponent latLngList={latLngList} currentPosition={currentPosition} />
-			{/* {currentLocation && (
-				<div className={styles.currentInfo}>
-					<h3>Current Location</h3>
-					{currentLocation.speed_knots && (
-						<div>Speed: {formatSpeedMph(currentLocation.speed_knots)} mph</div>
-					)}
-					<div>
-						Time: {new Date(currentLocation.timestamp).toLocaleTimeString()}
-					</div>
-				</div>
-			)}
-			{rideState.currentRide && (
-				<div className={styles.rideInfo}>
-					<h3>{rideState.currentRide.name}</h3>
-					<div>
-						Started:{" "}
-						{new Date(rideState.currentRide.start_time).toLocaleTimeString()}
-					</div>
-					<div>Points: {rideState.ridePositions.length}</div>
-					{!rideState.currentRide.end_time && (
-						<div className={styles.ongoing}>🔴 Live</div>
-					)}
-				</div>
-			)} */}
 		</div>
 	);
 }

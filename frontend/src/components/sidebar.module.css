@@ -96,7 +96,7 @@ hr {
 	flex: 1;
 	overflow-y: auto;
 	padding-right: 8px;
-	
+
 	/* Custom scrollbar styling with auto-hide */
 	scrollbar-width: thin;
 	scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
@@ -154,7 +154,7 @@ hr {
 }
 
 .activeRide::before {
-	content: '';
+	content: "";
 	position: absolute;
 	left: 0;
 	top: 0;

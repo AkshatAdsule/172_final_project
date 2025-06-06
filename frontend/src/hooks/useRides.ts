@@ -1,5 +1,12 @@
 import { useEffect, useState } from "react";
-import type { RideSummary, RideDetail, WebSocketMessage, RideStartedMessage, RideEndedMessage, RidePositionUpdateMessage } from "../types";
+import type {
+	RideSummary,
+	RideDetail,
+	WebSocketMessage,
+	RideStartedMessage,
+	RideEndedMessage,
+	RidePositionUpdateMessage,
+} from "../types";
 import { ApiService } from "../services/api";
 import { useWS } from "./useWS";
 

@@ -26,7 +26,6 @@ export interface RideDetail {
 	positions: Position[];
 }
 
-// WebSocket message types based on planning document
 export interface WebSocketMessage {
 	type:
 		| "current_location"
