@@ -1,10 +1,14 @@
 import { Link } from "@tanstack/react-router";
-import { useRides } from "../hooks/useRides";
 import { useEffect, useRef, useState } from "react";
+import { useLockStatus } from "../hooks/useLockStatus";
+import { useRides } from "../hooks/useRides";
+import { getEffectiveEndTime } from "../utils/rideUtils";
+import { Button } from "./button";
 import styles from "./sidebar.module.css";
 
 export default function Sidebar() {
 	const { rides, loading, error } = useRides();
+	const { lockStatus, isToggling, toggleLockStatus } = useLockStatus();
 	const ridesRef = useRef<HTMLDivElement>(null);
 	const [isScrolling, setIsScrolling] = useState(false);
 	const scrollTimeoutRef = useRef<number | undefined>(undefined);
@@ -57,6 +61,21 @@ export default function Sidebar() {
 				</h1>
 			</div>
 			<hr />
+			<div className={styles.lockSection}>
+				<Button
+					variant={lockStatus === "LOCKED" ? "destructive" : "default"}
+					onClick={toggleLockStatus}
+					disabled={isToggling}
+					className={styles.lockButton}
+				>
+					{isToggling
+						? "..."
+						: lockStatus === "LOCKED"
+							? "🔒 Locked"
+							: "🔓 Unlocked"}
+				</Button>
+			</div>
+			<hr />
 			<div className={styles.ridesHeader}>
 				<Link to="/rides/live">
 					<div>Live Track</div>
@@ -92,7 +111,12 @@ export default function Sidebar() {
 								</span>
 								<span className={styles.time}>
 									{formatTime(ride.start_time)}
-									{ride.end_time && ` - ${formatTime(ride.end_time)}`}
+									{(() => {
+										const effectiveEndTime = getEffectiveEndTime(ride);
+										return effectiveEndTime
+											? ` - ${formatTime(effectiveEndTime)}`
+											: "";
+									})()}
 								</span>
 							</div>
 						</Link>

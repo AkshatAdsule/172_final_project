@@ -15,6 +15,7 @@ type Config struct {
 	MQTTBrokerURL     string         `json:"mqtt_broker_url"`
 	MQTTClientID      string         `json:"mqtt_client_id"`
 	MQTTTopic         string         `json:"mqtt_topic"`
+	MQTTUpdateTopic   string         `json:"mqtt_update_topic"` // Topic for shadow updates
 	MQTTCertPath      string         `json:"mqtt_cert_path"`
 	MQTTKeyPath       string         `json:"mqtt_key_path"`
 	MQTTRootCAPath    string         `json:"mqtt_root_ca_path"`
@@ -41,6 +42,7 @@ var defaultConfig = Config{
 	MQTTBrokerURL:     "tls://a1edew9tp1yb1x-ats.iot.us-east-1.amazonaws.com:8883",
 	MQTTClientID:      "server-ride-tracker",
 	MQTTTopic:         "$aws/things/akshat_cc3200board/shadow/update/accepted",
+	MQTTUpdateTopic:   "$aws/things/akshat_cc3200board/shadow/update",
 	MQTTCertPath:      "certs/certificate.pem.crt", // Relative to executable or defined base path
 	MQTTKeyPath:       "certs/private.pem.key",     // Relative
 	MQTTRootCAPath:    "certs/AmazonRootCA1.pem",   // Relative

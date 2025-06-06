@@ -2,6 +2,7 @@
     "mqtt_broker_url": "tls://a1edew9tp1yb1x-ats.iot.us-east-1.amazonaws.com:8883",
     "mqtt_client_id": "b3-server",
     "mqtt_topic": "$aws/things/akshat_cc3200board/shadow/update/accepted",
+    "mqtt_update_topic": "$aws/things/akshat_cc3200board/shadow/update",
     "mqtt_cert_path": "certs/certificate.pem.crt",
     "mqtt_key_path": "certs/private.pem.key",
     "mqtt_root_ca_path": "certs/AmazonRootCA1.pem",

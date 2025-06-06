@@ -34,6 +34,21 @@ hr {
 	border-radius: 15px;
 }
 
+.lockSection {
+	flex-shrink: 0;
+}
+
+.lockButton {
+	width: 100%;
+}
+
+.lockButton:disabled {
+	opacity: 0.6;
+	cursor: not-allowed;
+}
+
+/* Since the Button component applies variant styles, we'll rely on those */
+
 .ridesHeader {
 	flex-shrink: 0;
 }

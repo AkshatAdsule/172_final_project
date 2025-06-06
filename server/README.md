@@ -48,10 +48,15 @@ The server components:
 - **RESTful API for Rides**: 
     - `GET /api/rides`: Retrieve a list of all ride summaries.
     - `GET /api/rides/:id`: Retrieve full details for a specific ride, including all GPS points.
+- **Lock Mode & Theft Detection**: 
+    - `POST /api/setLockStatus`: Set bike lock status (LOCKED/UNLOCKED).
+    - `GET /api/getLockStatus`: Get current lock status.
+    - When locked, movement detection triggers theft alerts via SNS instead of starting rides.
 - **Real-time Ride Events via WebSocket**: Broadcasts structured JSON messages for:
     - `RIDE_STARTED`: When a new ride begins.
     - `RIDE_ENDED`: When a ride concludes.
     - `RIDE_POSITION_UPDATE`: When a new GPS point is added to an ongoing ride.
+- **Alert Notifications**: SNS-based notifications for crash detection and theft alerts.
 - **Configurable Parameters**: Ride detection logic (start distance, end inactivity, etc.) can be tuned via `config.json`.
 - **Graceful Shutdown**: Proper cleanup of resources (DB connection, MQTT subscription) on termination signals.
 - **Health Check**: `GET /ping` endpoint for basic server status.
@@ -176,6 +181,16 @@ The server will:
     ```
   - Returns: `404 Not Found` if the ride ID does not exist.
   - Returns: `400 Bad Request` if the ID is not a valid integer.
+
+#### Lock Mode API
+- **`POST /api/setLockStatus`**
+  - Description: Sets the bike's lock status and publishes the update to IoT Shadow.
+  - Request Body: `{"status": "LOCKED"}` or `{"status": "UNLOCKED"}`
+  - Returns: `200 OK` with the updated status.
+  - Note: When locked, movement detection triggers theft alerts instead of starting rides.
+- **`GET /api/getLockStatus`**
+  - Description: Returns the current lock status.
+  - Returns: `200 OK` with `{"status": "LOCKED"}` or `{"status": "UNLOCKED"}`
 
 ### WebSocket Events
 

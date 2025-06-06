@@ -24,16 +24,20 @@ type RideManager struct {
 	lastUpdateTime time.Time // Timestamp of the last processed GPS point
 	db             *sql.DB
 	cfg            config.Config
-	hub            *ws.Hub // WebSocket hub for broadcasting
+	hub            *ws.Hub                                     // WebSocket hub for broadcasting
+	lockStatus     string                                      // Current lock status: "LOCKED" or "UNLOCKED"
+	theftAlertFunc func(lat, lon float64, timestamp time.Time) // Function to call for theft alerts
 }
 
 // NewRideManager creates a new RideManager.
 func NewRideManager(db *sql.DB, appConfig config.Config, hub *ws.Hub) *RideManager { // Added hub parameter
 	return &RideManager{
-		currentState: StateIdle,
-		db:           db,
-		cfg:          appConfig,
-		hub:          hub, // Assign hub
+		currentState:   StateIdle,
+		db:             db,
+		cfg:            appConfig,
+		hub:            hub,        // Assign hub
+		lockStatus:     "UNLOCKED", // Initialize to unlocked
+		theftAlertFunc: nil,        // Will be set separately if needed
 	}
 }
 
@@ -77,6 +81,16 @@ func (rm *RideManager) HandleGPSData(point models.Position) {
 	// 3. Handle state transitions and events
 	if eventOccurred {
 		if eventType == "ride_started" {
+			// Check if bike is locked - if so, this is potential theft
+			if rm.lockStatus == "LOCKED" {
+				log.Printf("THEFT DETECTION: Movement detected while bike is locked! Location: lat %f, lon %f",
+					point.Latitude, point.Longitude)
+				// Send theft alert if alert function is set
+				if rm.theftAlertFunc != nil {
+					rm.theftAlertFunc(point.Latitude, point.Longitude, point.Timestamp)
+				}
+				return // Exit early, don't start a ride in lock mode
+			}
 			rm.startNewRide(point)
 			// Notify via WebSocket (TODO)
 			// rm.hub.BroadcastRideStarted(rm.currentRideID, rm.currentRideName, rm.rideStartTime, point)
@@ -209,4 +223,26 @@ func (rm *RideManager) resetRideState() {
 	// Or maybe it should be reset if we only care about activity *within* a ride context for this var.
 	// For now, keeping its current behavior.
 	log.Println("RideManager state reset to Idle.")
+}
+
+// SetLockStatus updates the lock status of the bike
+func (rm *RideManager) SetLockStatus(status string) {
+	rm.mu.Lock()
+	defer rm.mu.Unlock()
+	rm.lockStatus = status
+	log.Printf("Lock status updated to: %s", status)
+}
+
+// GetLockStatus returns the current lock status
+func (rm *RideManager) GetLockStatus() string {
+	rm.mu.Lock()
+	defer rm.mu.Unlock()
+	return rm.lockStatus
+}
+
+// SetTheftAlertFunc sets the function to call when theft is detected
+func (rm *RideManager) SetTheftAlertFunc(alertFunc func(lat, lon float64, timestamp time.Time)) {
+	rm.mu.Lock()
+	defer rm.mu.Unlock()
+	rm.theftAlertFunc = alertFunc
 }

@@ -35,7 +35,8 @@ type ShadowStateDesired struct {
 	SpeedKnots float64 `json:"speed_knots"`
 	Timestamp  string  `json:"timestamp"` // "HHMMSS.SS"
 	ValidFix   bool    `json:"valid_fix"`
-	Status     string  `json:"status,omitempty"` // For crash detection
+	Status     string  `json:"status,omitempty"`      // For crash detection
+	LockStatus string  `json:"lock_status,omitempty"` // For lock mode: "LOCKED" or "UNLOCKED"
 }
 
 // ShadowState holds the overall state from the shadow document.
@@ -101,6 +102,30 @@ func main() {
 		}
 	}
 
+	// Set up theft alert function after SNS notifier is initialized
+	theftAlertFunc := func(lat, lon float64, timestamp time.Time) {
+		if crashNotifier != nil {
+			theftMessage := fmt.Sprintf(
+				"🚨 THEFT ALERT 🚨\n\nUnauthorized movement detected while bike is locked at %s.\nLocation: lat %f, lon %f.\n\nGoogle Maps: https://maps.google.com/?q=%f,%f",
+				timestamp.Format(time.RFC1123),
+				lat,
+				lon,
+				lat,
+				lon,
+			)
+
+			err := crashNotifier.PublishSimple(appConfig.SNSTopicArn, theftMessage)
+			if err != nil {
+				log.Printf("Failed to publish theft alert to SNS: %v", err)
+			} else {
+				log.Println("Successfully published theft alert to SNS.")
+			}
+		} else {
+			log.Println("Theft detected, but SNS notifier is not enabled.")
+		}
+	}
+	rideManager.SetTheftAlertFunc(theftAlertFunc)
+
 	var msgChan <-chan []byte
 	var errChan <-chan error
 	var closeFn func()
@@ -123,6 +148,29 @@ func main() {
 		)
 		if err != nil {
 			log.Fatalf("Failed to subscribe to shadow updates: %v", err)
+		}
+	}
+
+	// Initialize MQTT Publisher for shadow updates
+	var mqttPublisher *mqttsubscriber.Publisher
+	if !appConfig.TestMode {
+		var err error
+		mqttPublisher, err = mqttsubscriber.NewPublisher(
+			appConfig.MQTTBrokerURL,
+			appConfig.MQTTClientID,
+			appConfig.MQTTUpdateTopic,
+			appConfig.MQTTCertPEM,
+			appConfig.MQTTKeyPEM,
+			appConfig.MQTTRootCAPEM,
+			appConfig.MQTTCertPath,
+			appConfig.MQTTKeyPath,
+			appConfig.MQTTRootCAPath,
+		)
+		if err != nil {
+			log.Printf("Failed to initialize MQTT publisher: %v. Lock status updates will not be published.", err)
+			mqttPublisher = nil
+		} else {
+			log.Println("MQTT Publisher initialized successfully.")
 		}
 	}
 
@@ -149,6 +197,7 @@ func main() {
 	// Register API Handlers
 	apiGroup := router.Group("/api")
 	api.RegisterRideHandlers(apiGroup, db)
+	api.RegisterLockHandlers(apiGroup, rideManager, mqttPublisher)
 
 	// Add test-only endpoints if in test mode
 	if appConfig.TestMode {
@@ -207,6 +256,9 @@ func main() {
 	if crashNotifier != nil {
 		crashNotifier.Close()
 	}
+	if mqttPublisher != nil {
+		mqttPublisher.Close()
+	}
 	fmt.Println("Server shut down.")
 }
 
@@ -227,6 +279,12 @@ func handleMqttMessageProcessing(msgChan <-chan []byte, errChan <-chan error, ri
 				if err := json.Unmarshal(message, &shadowDoc); err != nil {
 					log.Printf("Error unmarshalling shadow document: %v.", err)
 					continue
+				}
+
+				// Check for lock status updates
+				if shadowDoc.State.Desired.LockStatus != "" {
+					log.Printf("Lock status update received: %s", shadowDoc.State.Desired.LockStatus)
+					rideManager.SetLockStatus(shadowDoc.State.Desired.LockStatus)
 				}
 
 				// Check for crash detection
