@@ -63,10 +63,10 @@ export default function Sidebar() {
 			<hr />
 			<div className={styles.lockSection}>
 				<Button
-					variant={lockStatus === "LOCKED" ? "destructive" : "default"}
+					variant="outline"
 					onClick={toggleLockStatus}
 					disabled={isToggling}
-					className={styles.lockButton}
+					className={`${styles.lockButton} ${lockStatus === "LOCKED" ? styles.locked : ""}`}
 				>
 					{isToggling
 						? "..."

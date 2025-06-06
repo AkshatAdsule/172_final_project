@@ -40,6 +40,19 @@ hr {
 
 .lockButton {
 	width: 100%;
+	/* Override button styles to match Live Track button */
+	background-color: transparent !important;
+	border: 1px solid var(--primary-color) !important;
+	color: white !important;
+	font-weight: 600 !important;
+	padding: 12px !important;
+	border-radius: 4px !important;
+	transition: background-color 0.2s !important;
+	height: unset !important;
+}
+
+.lockButton:hover:not(:disabled) {
+	background-color: #333 !important;
 }
 
 .lockButton:disabled {
@@ -47,7 +60,15 @@ hr {
 	cursor: not-allowed;
 }
 
-/* Since the Button component applies variant styles, we'll rely on those */
+/* Special styling for locked state - filled red */
+.lockButton.locked {
+	background-color: var(--destructive-color) !important;
+	border-color: var(--destructive-color) !important;
+}
+
+.lockButton.locked:hover:not(:disabled) {
+	background-color: var(--destructive-hover) !important;
+}
 
 .ridesHeader {
 	flex-shrink: 0;
