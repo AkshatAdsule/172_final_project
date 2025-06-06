@@ -1,8 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { MapComponent } from "../../components/map/MapComponent";
 import { useRideDetail } from "../../hooks/useRides";
-import { formatSpeedMph } from "../../utils/speed";
 import type { LatLng } from "../../types";
+import { getEffectiveEndTime } from "../../utils/rideUtils";
+import { formatSpeedMph } from "../../utils/speed";
 import styles from "./styles/rideDetail.module.css";
 
 export const Route = createFileRoute("/rides/$rideId")({
@@ -49,10 +50,11 @@ function RouteComponent() {
 	};
 
 	const calculateDuration = () => {
-		if (!rideDetail.end_time) return "Ongoing";
+		const effectiveEndTime = getEffectiveEndTime(rideDetail);
+		if (!effectiveEndTime) return "Ongoing";
 
 		const start = new Date(rideDetail.start_time);
-		const end = new Date(rideDetail.end_time);
+		const end = new Date(effectiveEndTime);
 		const durationMs = end.getTime() - start.getTime();
 		const minutes = Math.floor(durationMs / 60000);
 		const hours = Math.floor(minutes / 60);
@@ -91,12 +93,15 @@ function RouteComponent() {
 						<span className={styles.label}>Started:</span>
 						<span>{formatDateTime(rideDetail.start_time)}</span>
 					</div>
-					{rideDetail.end_time && (
-						<div className={styles.detailItem}>
-							<span className={styles.label}>Ended:</span>
-							<span>{formatDateTime(rideDetail.end_time)}</span>
-						</div>
-					)}
+					{(() => {
+						const effectiveEndTime = getEffectiveEndTime(rideDetail);
+						return effectiveEndTime ? (
+							<div className={styles.detailItem}>
+								<span className={styles.label}>Ended:</span>
+								<span>{formatDateTime(effectiveEndTime)}</span>
+							</div>
+						) : null;
+					})()}
 					<div className={styles.detailItem}>
 						<span className={styles.label}>Duration:</span>
 						<span>{calculateDuration()}</span>

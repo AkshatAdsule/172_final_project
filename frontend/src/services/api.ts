@@ -1,4 +1,4 @@
-import type { RideSummary, RideDetail } from "../types";
+import type { RideDetail, RideSummary } from "../types";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE
 	? `http${import.meta.env.VITE_API_BASE}/api`
@@ -60,5 +60,25 @@ export class ApiService {
 	 */
 	static async getRideDetail(rideId: number): Promise<RideDetail> {
 		return this.request<RideDetail>(`/rides/${rideId}`);
+	}
+
+	/**
+	 * Get the current lock status
+	 */
+	static async getLockStatus(): Promise<{ status: "LOCKED" | "UNLOCKED" }> {
+		return this.request<{ status: "LOCKED" | "UNLOCKED" }>("/getLockStatus");
+	}
+
+	/**
+	 * Set the lock status
+	 * @param status - The desired lock status
+	 */
+	static async setLockStatus(
+		status: "LOCKED" | "UNLOCKED",
+	): Promise<{ status: "LOCKED" | "UNLOCKED" }> {
+		return this.request<{ status: "LOCKED" | "UNLOCKED" }>("/setLockStatus", {
+			method: "POST",
+			body: JSON.stringify({ status }),
+		});
 	}
 }
