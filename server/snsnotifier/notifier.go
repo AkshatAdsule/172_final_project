@@ -165,12 +165,10 @@ func (n *Notifier) CreateTopic(topicName string, isFIFO bool) (string, error) {
 		Name: aws.String(topicName),
 	}
 
-	// Add FIFO attributes if needed
 	if isFIFO {
 		input.Attributes = map[string]string{
 			"FifoTopic": "true",
 		}
-		// Ensure FIFO topic name ends with .fifo
 		if len(topicName) < 5 || topicName[len(topicName)-5:] != ".fifo" {
 			input.Name = aws.String(topicName + ".fifo")
 		}
@@ -188,7 +186,6 @@ func (n *Notifier) CreateTopic(topicName string, isFIFO bool) (string, error) {
 // Close gracefully shuts down the notifier (implements similar pattern to MQTT subscriber's closeFn)
 func (n *Notifier) Close() {
 	log.Println("SNS Notifier closed gracefully")
-	// SNS client doesn't require explicit closing, but this provides consistency with MQTT pattern
 }
 
 // GetTopicArnFromEnv is a helper function to get topic ARN from environment variable

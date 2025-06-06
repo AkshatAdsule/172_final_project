@@ -12,7 +12,6 @@ import (
 )
 
 var (
-	// mockMQTTChannel is used in test mode to simulate receiving MQTT messages.
 	mockMQTTChannel chan []byte
 )
 
@@ -35,8 +34,6 @@ func NewTLSConfig(caPEM, certPEM, keyPEM, caPath, certPath, keyPath string) (*tl
 		}
 	} else {
 		log.Println("Warning: No CA certificate PEM string or file path provided. System CAs will be used if available, or connection may be insecure.")
-		// If no CA is provided, it will use system CAs or might be insecure depending on server/client config.
-		// For some brokers, not providing a RootCA means it won't be explicitly trusted, relying on public CAs.
 	}
 
 	var clientCert tls.Certificate
@@ -54,7 +51,6 @@ func NewTLSConfig(caPEM, certPEM, keyPEM, caPath, certPath, keyPath string) (*tl
 		}
 	} else {
 		log.Println("Warning: No client certificate PEMs or file paths provided. Proceeding without client certificate.")
-		// No client certs to add if neither PEMs nor paths are provided
 		return &tls.Config{
 			RootCAs:    certpool,
 			ClientAuth: tls.NoClientCert,
@@ -64,7 +60,7 @@ func NewTLSConfig(caPEM, certPEM, keyPEM, caPath, certPath, keyPath string) (*tl
 
 	return &tls.Config{
 		RootCAs:      certpool,
-		ClientAuth:   tls.NoClientCert, // Assuming server does not require client cert, or client cert is optional
+		ClientAuth:   tls.NoClientCert,
 		ClientCAs:    nil,
 		Certificates: []tls.Certificate{clientCert},
 	}, nil

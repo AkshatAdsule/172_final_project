@@ -44,8 +44,6 @@ func (c *Client) readPump() {
 			}
 			break
 		}
-		// For this application, we don't expect messages from the client to the hub.
-		// If we did, we would process them here, e.g., by sending to c.hub.broadcast or another channel.
 		log.Printf("Received unexpected message from client: %s", message)
 	}
 }
@@ -77,12 +75,6 @@ func (c *Client) writePump() {
 			}
 			w.Write(message)
 
-			// Add queued chat messages to the current websocket message.
-			// n := len(c.send)
-			// for i := 0; i < n; i++ {
-			// 	w.Write(<-c.send)
-			// }
-
 			if err := w.Close(); err != nil {
 				return
 			}
@@ -93,12 +85,4 @@ func (c *Client) writePump() {
 			}
 		}
 	}
-}
-
-// newClient is a helper function to create a client. Not typically called directly by users of Hub.
-func newClient(hub *Hub, conn *websocket.Conn) *Client {
-	client := &Client{hub: hub, conn: conn, send: make(chan []byte, 256)}
-	go client.writePump()
-	go client.readPump()
-	return client
 }

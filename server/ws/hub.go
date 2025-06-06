@@ -20,13 +20,9 @@ var upgrader = websocket.Upgrader{
 }
 
 // Hub maintains the set of active clients and broadcasts messages to the
-// clients.
 type Hub struct {
 	// Registered clients.
 	clients map[*Client]bool
-
-	// Inbound messages from the clients. (Not used in this app, but good for structure)
-	// broadcast chan []byte
 
 	// Register requests from the clients.
 	register chan *Client
@@ -38,7 +34,6 @@ type Hub struct {
 // NewHub creates a new Hub.
 func NewHub() *Hub {
 	return &Hub{
-		// broadcast:  make(chan []byte), // Not directly used for now
 		register:   make(chan *Client),
 		unregister: make(chan *Client),
 		clients:    make(map[*Client]bool),
@@ -58,21 +53,11 @@ func (h *Hub) Run() {
 				close(client.send)
 				log.Println("Client unregistered from hub")
 			}
-			// case message := <-h.broadcast: // Generic broadcast, not used for specific ride events
-			// 	for client := range h.clients {
-			// 		select {
-			// 		case client.send <- message:
-			// 		default:
-			// 			close(client.send)
-			// 			delete(h.clients, client)
-			// 		}
-			// 	}
 		}
 	}
 }
 
 // BroadcastMessage sends a message to all connected clients.
-// This is a generic broadcaster. We'll add specific event broadcasters.
 func (h *Hub) BroadcastMessage(messageType string, payload interface{}) {
 	message := map[string]interface{}{
 		"type":      messageType,
@@ -104,24 +89,14 @@ func ServeWs(hub *Hub, w http.ResponseWriter, r *http.Request) {
 		log.Printf("Failed to upgrade to WebSocket: %v", err)
 		return
 	}
-	// newClient is defined in client.go, it will register itself via c.hub.register
-	// when its readPump starts if we design it that way, or we register here.
-	// For now, newClient (as currently defined) will need the hub to then register itself.
-	// The current newClient starts its own read/write pumps.
 
 	client := &Client{hub: hub, conn: conn, send: make(chan []byte, 256)}
 	hub.register <- client
 
-	// The newClient function in client.go already starts these goroutines.
-	// If we call newClient directly, it handles this.
-	// Let's stick to current newClient which is not exported and called internally by client.go logic that isn't directly used here.
-	// Instead, we construct the client here and then start its pumps.
 	go client.writePump()
 	go client.readPump()
 	log.Println("ServeWs: Client created and pumps started, registration sent to hub.")
 }
-
-// Specific event broadcasting methods for RideManager to call:
 
 // RideEventPayload is a generic structure for ride event payloads
 type RideEventPayload struct {
@@ -129,7 +104,6 @@ type RideEventPayload struct {
 	RideName  string           `json:"ride_name,omitempty"`
 	Timestamp time.Time        `json:"timestamp"`
 	Position  *models.Position `json:"position,omitempty"` // For position updates
-	// Add other relevant fields as needed
 }
 
 // BroadcastRideStarted sends a message when a new ride starts.

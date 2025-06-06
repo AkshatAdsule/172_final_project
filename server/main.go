@@ -263,8 +263,6 @@ func main() {
 }
 
 func handleMqttMessageProcessing(msgChan <-chan []byte, errChan <-chan error, rideManager *ride.RideManager, appCfg config.Config, crashNotifier *snsnotifier.Notifier) {
-	// This function now only processes MQTT messages and passes them to RideManager
-	// WebSocket connection handling is done by ws.ServeWs and the ws.Hub
 	go func() {
 		for {
 			select {
@@ -339,8 +337,7 @@ func handleMqttMessageProcessing(msgChan <-chan []byte, errChan <-chan error, ri
 					return
 				}
 				log.Printf("Error from MQTT subscriber: %v.", err)
-				// Consider how to propagate this error if needed, for now, just log
-				return // Or attempt to re-establish subscription? For now, exits processor.
+				return
 			}
 		}
 	}()

@@ -45,10 +45,8 @@ func CombineDateTime(baseTime time.Time, timeStr string) (time.Time, error) {
 
 	var millisecond int
 	if len(parts) > 1 && len(parts[1]) > 0 {
-		// Assuming .SS means hundredths of a second
 		centiSeconds, err := strconv.Atoi(parts[1])
 		if err != nil {
-			// try to parse if it's SSS (milliseconds)
 			if len(parts[1]) == 3 {
 				millisecond, err = strconv.Atoi(parts[1])
 				if err != nil {
@@ -62,8 +60,6 @@ func CombineDateTime(baseTime time.Time, timeStr string) (time.Time, error) {
 		}
 	}
 
-	// Use year, month, day from baseTime (which is UTC)
-	// and hour, minute, second, nanosecond from parsed timeStr (assumed UTC)
 	return time.Date(
 		baseTime.Year(), baseTime.Month(), baseTime.Day(),
 		hour, minute, second, millisecond*int(time.Millisecond),

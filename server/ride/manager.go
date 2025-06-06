@@ -4,9 +4,8 @@ import (
 	"b3/server/config"
 	"b3/server/database"
 	"b3/server/models"
-	"b3/server/ws" // Added import for ws package
+	"b3/server/ws"
 
-	// "b3/server/ws" // Will be needed later for WebSocket hub
 	"database/sql"
 	"log"
 	"sync"
@@ -216,12 +215,8 @@ func (rm *RideManager) resetRideState() {
 	// This function assumes rm.mu is already locked.
 	rm.currentState = StateIdle
 	rm.currentRideID = 0
-	// rm.lastPosition = nil // Keep lastPosition to compare for next ride start immediately
 	rm.rideStartTime = time.Time{}
 	rm.pausedSince = time.Time{}
-	// lastUpdateTime is not reset here, as it's for general MQTT activity.
-	// Or maybe it should be reset if we only care about activity *within* a ride context for this var.
-	// For now, keeping its current behavior.
 	log.Println("RideManager state reset to Idle.")
 }
 

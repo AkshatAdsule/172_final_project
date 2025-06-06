@@ -34,8 +34,6 @@ type WebSocketMessage struct {
 	Payload interface{} `json:"payload"`
 }
 
-// --- WebSocket Payload Structs (examples based on PLANNING.md) ---
-
 // WSLocationPayload is for the 'current_location' WebSocket message.
 type WSLocationPayload struct {
 	Latitude   float64   `json:"latitude"`

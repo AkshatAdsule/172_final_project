@@ -182,7 +182,6 @@ func GetRideDetails(db *sql.DB, rideID int64) (*models.RideDetail, error) {
 }
 
 // GetAllRidesSummary retrieves a summary of all rides.
-// TODO: Add pagination and filtering as per PLANNING.md.
 func GetAllRidesSummary(db *sql.DB) ([]models.RideSummary, error) {
 	rows, err := db.Query("SELECT id, name, start_time, end_time FROM rides ORDER BY start_time DESC")
 	if err != nil {
